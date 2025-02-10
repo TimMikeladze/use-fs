@@ -2,9 +2,9 @@
 
 A set of React hooks to interact with the browser's [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
 
-Watch a directory for changes and return a map of filepaths & contents when a file is added, modified or removed.
+Watches a directory for file changes and rerenders when a file is added, modified or removed.
 
-Check out the 📖 [**Storybook**](https://timmikeladze.github.io/use-fs) for a live example.
+Check out the 💻 [**use-fs.com**](https://use-fs.app) to see it in action.
 
 > ⚠️ Note: The File System API is not fully supported in all browsers yet...but it works in Chrome.
 

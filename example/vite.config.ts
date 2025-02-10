@@ -13,4 +13,5 @@ export default defineConfig({
 		// biome-ignore lint/style/useNamingConvention: <explanation>
 		VITE_UMAMI_URL: JSON.stringify(process.env.VITE_UMAMI_URL),
 	},
+	assetsInclude: ["**/*.md"],
 });

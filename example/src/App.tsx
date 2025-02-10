@@ -1,5 +1,5 @@
 import React, { type JSX } from "react";
-import { commonFilters, useFileSystem } from "../../src";
+import { commonFilters, useFs } from "use-fs";
 
 type FileState = {
 	path: string;
@@ -23,7 +23,7 @@ const App = () => {
 	const [showCopied, setShowCopied] = React.useState(false);
 
 	const { onDirectorySelection, onClear, files, isBrowserSupported } =
-		useFileSystem({
+		useFs({
 			filters: commonFilters,
 			onFilesAdded: (newFiles, previousFiles) => {
 				console.log("onFilesAdded", newFiles, previousFiles);

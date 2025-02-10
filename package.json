@@ -114,5 +114,7 @@
 		},
 		"onlyBuiltDependencies": ["lefthook"]
 	},
-	"dependencies": {}
+	"dependencies": {
+		"ignore": "^7.0.3"
+	}
 }

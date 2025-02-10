@@ -1,0 +1,37 @@
+{
+	"name": "example",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc -b && vite build",
+		"lint": "eslint .",
+		"preview": "vite preview"
+	},
+	"dependencies": {
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0",
+		"react-helmet": "^6.1.0",
+		"use-fs": "link:.."
+	},
+	"devDependencies": {
+		"@eslint/js": "^9.19.0",
+		"@types/react": "^19.0.8",
+		"@types/react-dom": "^19.0.3",
+		"@types/react-helmet": "^6.1.11",
+		"@vitejs/plugin-react": "^4.3.4",
+		"eslint": "^9.19.0",
+		"eslint-plugin-react-hooks": "^5.0.0",
+		"eslint-plugin-react-refresh": "^0.4.18",
+		"globals": "^15.14.0",
+		"typescript": "~5.7.2",
+		"typescript-eslint": "^8.22.0",
+		"vite": "^6.1.0",
+		"@tailwindcss/vite": "^4.0.5",
+		"ignore": "^7.0.3",
+		"postcss": "^8.5.1",
+		"postcss-load-config": "^6.0.1",
+		"tailwindcss": "^4.0.5"
+	}
+}

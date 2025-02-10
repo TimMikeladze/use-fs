@@ -338,7 +338,7 @@ const App = () => {
 					</div>
 				</div>
 			</main>
-			<footer className="mx-auto mt-18 max-w-fit border-gray-200/10 border-tpy-6 backdrop-blur-sm">
+			<footer className="mx-auto my-18 max-w-fit border-gray-200/10 border-tpy-6 backdrop-blur-sm">
 				<div className="px-4">
 					<div className="text-center text-gray-600 text-sm dark:text-gray-400">
 						Built by{" "}

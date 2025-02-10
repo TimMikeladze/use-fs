@@ -1,5 +1,5 @@
 import { action } from "@storybook/addon-actions";
-import React, { useEffect, type JSX } from "react";
+import React, { type JSX } from "react";
 import { commonFilters, useFileSystem } from "..";
 
 type FileState = {
@@ -66,13 +66,7 @@ export const Example = () => {
 		},
 	});
 
-	const [renderCount, setRenderCount] = React.useState(0);
 	const [isLoading, setIsLoading] = React.useState(false);
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-	useEffect(() => {
-		setRenderCount((count) => count + 1);
-	}, [files.size]);
 
 	const handleDirectorySelection = async () => {
 		setIsLoading(true);
@@ -215,14 +209,13 @@ export const Example = () => {
 					<div
 						style={{
 							display: "grid",
-							gridTemplateColumns: "1fr 1fr",
+							gridTemplateColumns: "1fr",
 							gap: "1rem",
 							padding: "0.5rem",
 							backgroundColor: "#f8f9fa",
 							borderRadius: "4px",
 						}}
 					>
-						<div>Number of renders: {renderCount}</div>
 						<div>Number of files: {files.size}</div>
 						{isLoading && (
 							<div

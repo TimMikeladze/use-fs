@@ -29,11 +29,12 @@ export const gitFilter: FilterFn = async () => {
 	let gitIgnoreLoaded = false;
 
 	return {
-		shouldIncludeFile: async (
-			filepath: string,
-			handle: FileSystemHandle,
-		) => {
-			if (filepath.endsWith(".gitignore") && !gitIgnoreLoaded && handle.kind === 'file') {
+		shouldIncludeFile: async (filepath: string, handle: FileSystemHandle) => {
+			if (
+				filepath.endsWith(".gitignore") &&
+				!gitIgnoreLoaded &&
+				handle.kind === "file"
+			) {
 				const fileHandle = handle as FileSystemFileHandle;
 				const file = await fileHandle.getFile();
 				const text = await file.text();
@@ -87,10 +88,7 @@ export const distFilter: FilterFn = async () => {
 		return false;
 	};
 	return {
-		shouldIncludeFile: async (
-			filepath: string,
-			_handle: FileSystemHandle,
-		) => {
+		shouldIncludeFile: async (filepath: string, _handle: FileSystemHandle) => {
 			if (isDist(filepath)) {
 				return false;
 			}
@@ -116,10 +114,7 @@ export const miscFilter: FilterFn = async () => {
 		return false;
 	};
 	return {
-		shouldIncludeFile: async (
-			filepath: string,
-			_handle: FileSystemHandle,
-		) => {
+		shouldIncludeFile: async (filepath: string, _handle: FileSystemHandle) => {
 			if (isMisc(filepath)) {
 				return false;
 			}
@@ -174,7 +169,12 @@ export const processDirectory = async (
 					(async () => {
 						let shouldInclude = true;
 						for (const filter of filters) {
-							if ((await filter.shouldIncludeFile(path, entry as FileSystemFileHandle)) === false) {
+							if (
+								(await filter.shouldIncludeFile(
+									path,
+									entry as FileSystemFileHandle,
+								)) === false
+							) {
 								shouldInclude = false;
 								ignoreFilePaths.add(path);
 								includeFiles.delete(path);
@@ -248,11 +248,14 @@ export interface UseFileHandlingHookProps {
 	pollInterval?: number;
 	batchSize?: number;
 	debounceInterval?: number;
+	/** Time in milliseconds to cache file contents before re-reading from disk. Defaults to 5000ms (5 seconds) */
+	fileCacheTtl?: number;
 }
 
-const DEFAULT_POLL_INTERVAL = 16;
-const DEFAULT_BATCH_SIZE = 100;
-const DEFAULT_DEBOUNCE_INTERVAL = 0;
+const DEFAULT_POLL_INTERVAL = 100;
+const DEFAULT_BATCH_SIZE = 50;
+const DEFAULT_DEBOUNCE_INTERVAL = 50;
+const DEFAULT_FILE_CACHE_TTL = 5000; // 5 seconds
 
 export const useFileSystem = (props: UseFileHandlingHookProps) => {
 	const {
@@ -278,7 +281,7 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 	const fileContentsCache = useRef<
 		Map<string, { content: string; timestamp: number }>
 	>(new Map());
-	const fileCacheTtl = 5000; // 5 seconds
+	const fileCacheTtl = props.fileCacheTtl || DEFAULT_FILE_CACHE_TTL;
 
 	const clearWatchedDirectories = useCallback(() => {
 		if (intervalRef.current) {
@@ -299,7 +302,7 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 		const temporaryHandles = new Map<string, FileSystemFileHandle>();
 		const ignoreFilePaths = new Set<string>();
 
-		const filterFns: FilterFn[] = props.filters || [];
+		const filterFns: FilterFn[] = props.filters || commonFilters;
 		const filters: Filter[] = [];
 
 		for (const filterFn of filterFns) {
@@ -347,7 +350,7 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 			const batch = handles.slice(i, i + batchSize);
 			await Promise.all(
 				batch.map(async ([filePath, handle]) => {
-					if (handle.kind === 'file') {
+					if (handle.kind === "file") {
 						seenFiles.add(filePath);
 
 						try {
@@ -454,7 +457,7 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 		if (rerender) {
 			setFiles(new Map(Object.entries(filesMapRef.current)));
 		}
-	}, [onAddFile, onChangeFile, onDeleteFile, batchSize]);
+	}, [onAddFile, onChangeFile, onDeleteFile, batchSize, fileCacheTtl]);
 
 	// Debounce the files state update
 	const debouncedFiles = useDebounce(files, debounceInterval);
@@ -462,22 +465,25 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 	const startPollingWatchedDirectories = useCallback(() => {
 		let processingPromise: Promise<void> | null = null;
 
-		intervalRef.current = setInterval(async () => {
-			if (isProcessing || processingPromise) {
-				return;
-			}
-
-			setIsProcessing(true);
-			processingPromise = (async () => {
-				try {
-					await processWatchedDirectories();
-					await processFiles();
-				} finally {
-					setIsProcessing(false);
-					processingPromise = null;
+		// Only start a new interval if one isn't already running
+		if (!intervalRef.current) {
+			intervalRef.current = setInterval(async () => {
+				if (isProcessing || processingPromise) {
+					return;
 				}
-			})();
-		}, props.pollInterval || DEFAULT_POLL_INTERVAL);
+
+				setIsProcessing(true);
+				processingPromise = (async () => {
+					try {
+						await processWatchedDirectories();
+						await processFiles();
+					} finally {
+						setIsProcessing(false);
+						processingPromise = null;
+					}
+				})();
+			}, props.pollInterval || DEFAULT_POLL_INTERVAL);
+		}
 	}, [
 		processWatchedDirectories,
 		processFiles,
@@ -493,9 +499,6 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 			if (!directoryHandle) {
 				return;
 			}
-
-			// Clear previous state before setting up new directory
-			clearWatchedDirectories();
 
 			const initialDirectoryPath = directoryHandle.name;
 			watchedDirectoriesRef.current.set(initialDirectoryPath, directoryHandle);
@@ -520,6 +523,8 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 	};
 };
 
+export const useFs = useFileSystem;
+
 // below is copied from usehooks-ts
 
 const useEffectOnce = (effect: EffectCallback) => {
@@ -533,30 +538,3 @@ const useUnmount = (fn: () => void): void => {
 
 	useEffectOnce(() => () => fnRef.current());
 };
-
-// const useIsomorphicLayoutEffect =
-//   typeof window !== 'undefined' ? useLayoutEffect : useEffect;
-
-// // eslint-disable-next-line @typescript-eslint/no-unused-vars
-// const useInterval = (callback: () => void, delay: number | null) => {
-//   const savedCallback = useRef(callback);
-
-//   // Remember the latest callback if it changes.
-//   useIsomorphicLayoutEffect(() => {
-//     savedCallback.current = callback;
-//   }, [callback]);
-
-//   // Set up the interval.
-//   useEffect(() => {
-//     // Don't schedule if no delay is specified.
-//     // Note: 0 is a valid value for delay.
-//     if (!delay && delay !== 0) {
-//       return;
-//     }
-
-//     const id = setInterval(() => savedCallback.current(), delay);
-
-//     // eslint-disable-next-line consistent-return
-//     return () => clearInterval(id);
-//   }, [delay]);
-// };

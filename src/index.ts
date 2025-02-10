@@ -345,6 +345,7 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 
 		const now = Date.now();
 		const handles = Array.from(handlesRef.current);
+		const newFilesMap: Record<string, string> = {};
 
 		for (let i = 0; i < handles.length; i += batchSize) {
 			const batch = handles.slice(i, i + batchSize);
@@ -356,8 +357,8 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 						try {
 							const cached = fileContentsCache.current.get(filePath);
 							if (cached && now - cached.timestamp < fileCacheTtl) {
-								if (cached.content !== filesMapRef.current[filePath]) {
-									filesMapRef.current[filePath] = cached.content;
+								newFilesMap[filePath] = cached.content;
+								if (cached.content !== previousFilesMapRef.current[filePath]) {
 									changedFiles.set(filePath, cached.content);
 								}
 								return;
@@ -370,14 +371,13 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 								timestamp: now,
 							});
 
-							if (text !== filesMapRef.current[filePath]) {
-								filesMapRef.current[filePath] = text;
+							newFilesMap[filePath] = text;
+							if (text !== previousFilesMapRef.current[filePath]) {
 								changedFiles.set(filePath, text);
 							}
 						} catch (error) {
 							handlesRef.current.delete(filePath);
 							deletedFilesSet.add(filePath);
-							delete filesMapRef.current[filePath];
 							fileContentsCache.current.delete(filePath);
 							rerender = true;
 						}
@@ -440,19 +440,7 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 		}
 
 		previousHandlesRef.current = seenFiles;
-
-		if (
-			!rerender &&
-			Object.keys(filesMapRef.current).length ===
-				Object.keys(previousFilesMapRef.current).length
-		) {
-			for (const [filePath, text] of Object.entries(filesMapRef.current)) {
-				if (previousFilesMapRef.current[filePath] !== text) {
-					rerender = true;
-					break;
-				}
-			}
-		}
+		filesMapRef.current = newFilesMap;
 
 		if (rerender) {
 			setFiles(new Map(Object.entries(filesMapRef.current)));

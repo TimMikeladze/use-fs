@@ -6,7 +6,7 @@ Watch a directory for changes and return a map of filepaths & contents when a fi
 
 Check out the 📖 [**Storybook**](https://timmikeladze.github.io/use-fs) for a live example.
 
-> 🚧 Under active development. Expect breaking changes until v1.0.0.
+> ⚠️ Note: The File System API is not fully supported in all browsers yet...but it works in Chrome.
 
 ## 📡 Install
 
@@ -21,4 +21,3 @@ pnpm add use-fs
 > 👋 Hello there! Follow me [@linesofcode](https://twitter.com/linesofcode) or visit [linesofcode.dev](https://linesofcode.dev) for more cool projects like this one.
 
 ## 🚀 Getting Started
-

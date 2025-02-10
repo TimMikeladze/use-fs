@@ -18,8 +18,8 @@ importers:
         specifier: ^6.1.0
         version: 6.1.0(react@19.0.0)
       use-fs:
-        specifier: ^0.0.7
-        version: 0.0.7(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+        specifier: ^0.0.8
+        version: 0.0.8(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
     devDependencies:
       '@eslint/js':
         specifier: ^9.19.0
@@ -888,6 +888,10 @@ packages:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
     engines: {node: '>= 4'}
 
+  ignore@7.0.3:
+    resolution: {integrity: sha512-bAH5jbK/F3T3Jls4I0SO1hmPR0dKU0a7+SY6n1yzRtG54FLO8d6w/nxLFX2Nb7dBu6cCWXPaAME6cYqFUMmuCA==}
+    engines: {node: '>= 4'}
+
   import-fresh@3.3.1:
     resolution: {integrity: sha512-TR3KfrTZTYLPB6jUjfx6MF9WcWrHL9su5TObK4ZkYgBdWKPOFoSoQIdEuTuR82pmtxH2spWG9h6etwfr1pLBqQ==}
     engines: {node: '>=6'}
@@ -1249,8 +1253,8 @@ packages:
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
 
-  use-fs@0.0.7:
-    resolution: {integrity: sha512-kxVPI7JILy7LgD8Cwcx7EdqqAbNo+DmIRBjWxiWDjM+4n6N8739pDFcCPulJeWdP3ngtMc7Y7mY6FYCVlGbaVg==}
+  use-fs@0.0.8:
+    resolution: {integrity: sha512-bTElAy7uvWAr2ocKG7o/8zw070cHdZkrsJGcDE0hBw1KqAMm+m0OUg0OOw3TwH7XDIpTUTGri94xqEBU/AZE4g==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       react: '>=17'
@@ -2094,6 +2098,8 @@ snapshots:
 
   ignore@5.3.2: {}
 
+  ignore@7.0.3: {}
+
   import-fresh@3.3.1:
     dependencies:
       parent-module: 1.0.1
@@ -2394,8 +2400,9 @@ snapshots:
     dependencies:
       punycode: 2.3.1
 
-  use-fs@0.0.7(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
+  use-fs@0.0.8(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
     dependencies:
+      ignore: 7.0.3
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
 

@@ -9,3 +9,5 @@ pre-commit:
       run: pnpm build
     test:
       run: pnpm test:ci
+    example:
+      run: pnpm build

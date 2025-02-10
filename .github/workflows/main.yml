@@ -54,8 +54,14 @@ jobs:
       - name: Run tests
         run: pnpm test:ci
 
-      - name: Build storybook
-        run: pnpm storybook:build
-
       - name: Build package
         run: pnpm build
+
+      - name: Install example dependencies
+        run: cd example && pnpm install --frozen-lockfile
+
+      - name: Typecheck example
+        run: cd example && pnpm tsc
+
+      - name: Build example
+        run: cd example && pnpm build

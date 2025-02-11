@@ -176,17 +176,20 @@ const App = () => {
 									</div>
 									<p className="mt-4 text-left text-lg text-zinc-600 dark:text-zinc-400">
 										The File System Access API enables web applications to
-										seamlessly work with files on a user's local system. After a
-										user grants permission, web apps can read, write, and manage
-										files directly - eliminating the need for repeated file
-										selection dialogs. This capability is ideal for creating
-										powerful browser-based tools.
+										seamlessly work with files on a user's local system.
 									</p>
 									<p className="mt-4 text-left text-lg text-zinc-600 dark:text-zinc-400">
-										Unlike traditional file selection dialogs, the user will be
-										prompted to select a directory, the hook will watch the
-										files in that directory for changes - rerendering when
-										changes are detected.
+										Build web-apps that can read, write, and manage files
+										directly - eliminating the need for repeated file selection
+										dialogs. This capability is ideal for creating powerful
+										browser-based tools.
+									</p>
+									<p className="mt-4 text-left text-lg text-zinc-600 dark:text-zinc-400">
+										Unlike a traditional file selection dialog, the user will be
+										prompted to give the web-browser permission to access a
+										specific directory. Once permission is granted the hook will
+										watch the files in that directory for updates - re-rendering
+										whenever a file is added, changed or deleted.
 									</p>
 								</div>
 								<button
@@ -425,7 +428,8 @@ function App() {
 										/>
 									</svg>
 									<span className="font-medium text-zinc-900 dark:text-zinc-100">
-										{selectedFile.path || "No file selected"}
+										{selectedFile.path ||
+											"Click a file to view a real-time diff"}
 									</span>
 								</div>
 							</div>

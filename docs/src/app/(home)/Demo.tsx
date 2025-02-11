@@ -169,7 +169,7 @@ const App = () => {
 										.{" "}
 									</p>
 									<p className="mt-2 text-sm text-zinc-400 dark:text-zinc-600">
-										Supported in Chrome, Edge and Opera.
+										Supported on Desktop in Chrome, Edge and Opera.
 									</p>
 									<div className="mt-4">
 										<InstallCommand packageName="use-fs" />

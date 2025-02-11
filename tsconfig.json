@@ -8,5 +8,5 @@
 		"strict": true,
 		"noEmit": true
 	},
-	"exclude": ["example"]
+	"exclude": ["docs"]
 }

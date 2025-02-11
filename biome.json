@@ -7,7 +7,8 @@
 			"**/coverage/**",
 			"**/.next/**",
 			"**/node_modules/**",
-			"**/example/**"
+			"**/example/**",
+			"**/.source/**"
 		]
 	},
 	"organizeImports": {

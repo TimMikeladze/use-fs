@@ -1,12 +1,14 @@
 # 🗂️ use-fs
 
-A set of React hooks to interact with the browser's [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
+A React hook for integrating with the [File System Access API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_Access_API).
 
-Watches a directory for file changes and rerenders when a file is added, modified or removed.
+The File System Access API enables web applications to seamlessly work with files on a user's local system. After a user grants permission, web apps can read, write, and manage files directly - eliminating the need for repeated file selection dialogs. This capability is ideal for creating powerful browser-based tools.
 
-Check out the 💻 [**use-fs.com**](https://use-fs.app) to see it in action.
+Unlike traditional file selection dialogs, the user will be prompted to select a directory, the hook will watch the files in that directory for changes - rerendering when changes are detected.
 
-> ⚠️ Note: The File System API is not fully supported in all browsers yet...but it works in Chrome.
+Visit [**use-fs.com**](https://use-fs.app) to try it out.
+
+> ⚠️ Note: The File System API is not yet fully supported in all browsers yet. Works in Chrome, Edge and Opera.
 
 ## 📡 Install
 

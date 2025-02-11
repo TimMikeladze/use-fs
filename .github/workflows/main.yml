@@ -58,10 +58,7 @@ jobs:
         run: pnpm build
 
       - name: Install example dependencies
-        run: cd example && pnpm install --frozen-lockfile
-
-      - name: Typecheck example
-        run: cd example && pnpm tsc
+        run: cd docs && pnpm install --frozen-lockfile
 
       - name: Build example
-        run: cd example && pnpm build
+        run: cd docs && pnpm build

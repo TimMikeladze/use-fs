@@ -16,7 +16,7 @@
 		"prism-react-renderer": "^2.4.1",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
-		"use-fs": "^0.0.8"
+		"use-fs": "^0.0.10"
 	},
 	"devDependencies": {
 		"@iconify/react": "^5.2.0",

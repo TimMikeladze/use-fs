@@ -30,8 +30,8 @@ importers:
         specifier: ^19.0.0
         version: 19.0.0(react@19.0.0)
       use-fs:
-        specifier: ^0.0.8
-        version: 0.0.8(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+        specifier: ^0.0.10
+        version: 0.0.10(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
     devDependencies:
       '@iconify/react':
         specifier: ^5.2.0
@@ -1832,8 +1832,8 @@ packages:
       '@types/react':
         optional: true
 
-  use-fs@0.0.8:
-    resolution: {integrity: sha512-bTElAy7uvWAr2ocKG7o/8zw070cHdZkrsJGcDE0hBw1KqAMm+m0OUg0OOw3TwH7XDIpTUTGri94xqEBU/AZE4g==}
+  use-fs@0.0.10:
+    resolution: {integrity: sha512-eJuFHEaaff093abttKEdW/2V2etU1yTRJsesMZ2YaB4D1a+Gwqq43SvREAsjJGrcuNIsVlty/nVTXU0WrRUQXQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       react: '>=17'
@@ -3931,7 +3931,7 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.0.8
 
-  use-fs@0.0.8(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
+  use-fs@0.0.10(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
     dependencies:
       ignore: 7.0.3
       react: 19.0.0

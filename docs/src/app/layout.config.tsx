@@ -31,7 +31,7 @@ export const baseOptions: BaseLayoutProps = {
 		},
 		{
 			text: "Bluesky",
-			url: "https://bsky.app/profile/linesofcode",
+			url: "https://bsky.app/profile/linesofcode.bsky.social",
 			type: "icon",
 			icon: <Icon icon="meteor-icons:bluesky" />,
 		},

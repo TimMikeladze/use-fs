@@ -1,12 +1,29 @@
-"use client";
-import dynamic from "next/dynamic";
+import { metadataImage } from "@/lib/metadata";
+import { source } from "@/lib/source";
+import { notFound } from "next/navigation";
+import HomePage from "./page.client";
 
-const Demo = dynamic(() => import("./Demo"), { ssr: false });
+export async function generateMetadata(props: {
+	params: Promise<{ slug?: string[] }>;
+}) {
+	const params = await props.params;
+	const page = source.getPage(params.slug);
+	if (!page) {
+		notFound();
+	}
 
-export default function HomePage() {
+	return metadataImage.withImage(page.slugs, {
+		title:
+			"use-fs • a React hook for integrating with the File System Access API.",
+		description:
+			"A React hook for integrating with the File System Access API.",
+	});
+}
+
+export default function Page() {
 	return (
-		<main className="flex flex-1 flex-col justify-center text-center">
-			<Demo />
-		</main>
+		<div>
+			<HomePage />
+		</div>
 	);
 }

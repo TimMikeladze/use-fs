@@ -2,8 +2,9 @@
 
 import { Highlight, themes } from "prism-react-renderer";
 import React, { type JSX } from "react";
+import "react-install-command/styles.css";
+import { InstallCommand } from "react-install-command";
 import { commonFilters, useFs } from "use-fs";
-import InstallCommand from "./InstallCommand";
 
 type FileState = {
 	path: string;
@@ -171,10 +172,26 @@ const App = () => {
 									<p className="mt-2 text-sm text-zinc-400 dark:text-zinc-600">
 										Supported on Desktop in Chrome, Edge and Opera.
 									</p>
-									<div className="mt-4">
-										<InstallCommand packageName="use-fs" />
+									<div className="mt-2 sm:mt-4">
+										<InstallCommand
+											packageName="use-fs"
+											slotClassNames={{
+												root: "!rounded-lg !border !border-zinc-700 !bg-zinc-800/50 !overflow-hidden",
+												navigation:
+													"!bg-zinc-800 !border-b !border-zinc-700 !p-1 sm:!p-2 !px-0 !flex !flex-row !flex-wrap !items-center !min-h-fit",
+												tab: "!px-2 sm:!px-3 !py-1 sm:!py-1.5 !text-xs sm:!text-sm !rounded-md !text-zinc-400 hover:!text-zinc-400 data-[selected=true]:!bg-zinc-500/20 data-[selected=true]:!text-zinc-400 !whitespace-nowrap !-mb-2",
+												commandContainer:
+													"!bg-zinc-900 !p-2 sm:!p-3 !flex !flex-wrap !items-center !gap-1 sm:!gap-2",
+												commandPrefix:
+													"!text-zinc-500 !shrink-0 !text-xs sm:!text-sm",
+												commandText:
+													"!text-zinc-200 !break-all !text-xs sm:!text-sm",
+												copyButton:
+													"!ml-auto !p-1 sm:!p-1.5 !rounded-md hover:!bg-zinc-500/20 !text-zinc-400 hover:!text-zinc-400 !shrink-0",
+											}}
+										/>
 									</div>
-									<p className="mt-4 text-left text-lg text-zinc-600 dark:text-zinc-400">
+									<p className="mt-2 text-left text-base text-zinc-600 sm:mt-4 sm:text-lg dark:text-zinc-400">
 										The File System Access API enables web applications to
 										seamlessly work with files on a user's local system.
 									</p>

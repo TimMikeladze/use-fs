@@ -16,6 +16,7 @@
 		"prism-react-renderer": "^2.4.1",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
+		"react-install-command": "^1.0.2",
 		"use-fs": "^0.0.10"
 	},
 	"devDependencies": {

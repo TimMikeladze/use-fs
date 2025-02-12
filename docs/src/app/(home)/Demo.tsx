@@ -188,8 +188,8 @@ const App = () => {
 										Unlike a traditional file selection dialog, the user will be
 										prompted to give the web-browser permission to access a
 										specific directory. Once permission is granted the hook will
-										watch the files in that directory for updates - re-rendering
-										whenever a file is added, changed or deleted.
+										watch the files in that directory for updates, triggering a
+										re-render whenever a file is added, changed or deleted.
 									</p>
 								</div>
 								<button

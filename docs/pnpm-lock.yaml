@@ -4,9 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  react-install-command: link:../../../Library/pnpm/global/5/node_modules/react-install-command
-
 importers:
 
   .:

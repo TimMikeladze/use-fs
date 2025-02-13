@@ -185,15 +185,16 @@ const App = () => {
 													"!bg-zinc-100 dark:!bg-zinc-900 !border !border-zinc-200 dark:!border-zinc-800 !p-2 sm:!p-3 !flex !flex-wrap !items-center !gap-1 sm:!gap-2",
 												commandGroup: "!flex !items-center !gap-1",
 												commandPrefix:
-													"!text-zinc-900 !shrink-0 !text-xs sm:!text-sm !dark:text-zinc-300 !mr-2",
+													"!text-zinc-500 !shrink-0 !text-xs sm:!text-sm !dark:text-zinc-500 !mr-2",
 												commandText:
-													"!text-zinc-900 !break-all !text-xs sm:!text-sm !dark:text-zinc-300",
-												commandTextCommand:
-													"!text-zinc-700 !dark:text-zinc-400",
+													"!text-zinc-500 !shrink-0 !text-sm sm:!text-sm !dark:text-zinc-500 !mr-2",
+
 												copyButton:
 													"!ml-auto !p-1 sm:!p-1.5 !rounded-md hover:!bg-zinc-100 dark:hover:!bg-zinc-800/50 !text-zinc-600 hover:!text-zinc-800 dark:!text-zinc-400 dark:hover:!text-zinc-400 !shrink-0",
 												copyButtonIcon: "!w-4 !h-4",
 												tabIndicator: "!bg-zinc-900 dark:!bg-zinc-100 ",
+												commandTextCommand:
+													"!text-zinc-500 !shrink-0 !text-xs sm:!text-sm !dark:text-zinc-500 !mr-2",
 											}}
 										/>
 									</div>

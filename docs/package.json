@@ -16,7 +16,7 @@
 		"prism-react-renderer": "^2.4.1",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
-		"react-install-command": "^1.0.2",
+		"react-install-command": "^1.1.2",
 		"use-fs": "^0.0.10"
 	},
 	"devDependencies": {
@@ -29,5 +29,10 @@
 		"postcss": "^8.5.1",
 		"tailwindcss": "^4.0.5",
 		"typescript": "^5.7.3"
+	},
+	"pnpm": {
+		"overrides": {
+			"react-install-command": "link:../../../Library/pnpm/global/5/node_modules/react-install-command"
+		}
 	}
 }

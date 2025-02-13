@@ -25,7 +25,6 @@ const App = () => {
 			timestamp: number;
 		}>
 	>([]);
-	const [showCopied, setShowCopied] = React.useState(false);
 
 	const { onDirectorySelection, onClear, files, isBrowserSupported } = useFs({
 		filters: commonFilters,
@@ -176,18 +175,25 @@ const App = () => {
 										<InstallCommand
 											packageName="use-fs"
 											slotClassNames={{
-												root: "!rounded-lg !border !border-zinc-700 !bg-zinc-800/50 !overflow-hidden",
+												root: "!rounded-lg !border !border-zinc-200 dark:!border-zinc-800 !bg-white dark:!bg-zinc-800/50 !overflow-hidden",
 												navigation:
-													"!bg-zinc-800 !border-b !border-zinc-700 !p-1 sm:!p-2 !px-0 !flex !flex-row !flex-wrap !items-center !min-h-fit",
-												tab: "!px-2 sm:!px-3 !py-1 sm:!py-1.5 !text-xs sm:!text-sm !rounded-md !text-zinc-400 hover:!text-zinc-400 data-[selected=true]:!bg-zinc-500/20 data-[selected=true]:!text-zinc-400 !whitespace-nowrap !-mb-2",
+													"!bg-zinc-200/75 dark:!bg-zinc-800 !border-b !border-zinc-200 dark:!border-zinc-800 !p-1 sm:!p-2 !px-0 !flex !flex-row !flex-wrap !items-center !min-h-fit",
+												tab: "!px-2 sm:!px-3 !py-1 sm:!py-1.5 !text-xs sm:!text-sm !rounded-md !text-zinc-600 hover:!text-zinc-800 dark:!text-zinc-400 dark:hover:!text-zinc-400 data-[selected=true]:!bg-white dark:data-[selected=true]:!bg-zinc-800/50 data-[selected=true]:!text-zinc-900 dark:data-[selected=true]:!text-zinc-400 !whitespace-nowrap !-mb-2",
+												tabIcon: "!w-4 !h-4 !mr-1.5",
+												tabText: "!text-zinc-600 dark:!text-zinc-400",
 												commandContainer:
-													"!bg-zinc-900 !p-2 sm:!p-3 !flex !flex-wrap !items-center !gap-1 sm:!gap-2",
+													"!bg-zinc-100 dark:!bg-zinc-900 !border !border-zinc-200 dark:!border-zinc-800 !p-2 sm:!p-3 !flex !flex-wrap !items-center !gap-1 sm:!gap-2",
+												commandGroup: "!flex !items-center !gap-1",
 												commandPrefix:
-													"!text-zinc-500 !shrink-0 !text-xs sm:!text-sm",
+													"!text-zinc-900 !shrink-0 !text-xs sm:!text-sm !dark:text-zinc-300 !mr-2",
 												commandText:
-													"!text-zinc-200 !break-all !text-xs sm:!text-sm",
+													"!text-zinc-900 !break-all !text-xs sm:!text-sm !dark:text-zinc-300",
+												commandTextCommand:
+													"!text-zinc-700 !dark:text-zinc-400",
 												copyButton:
-													"!ml-auto !p-1 sm:!p-1.5 !rounded-md hover:!bg-zinc-500/20 !text-zinc-400 hover:!text-zinc-400 !shrink-0",
+													"!ml-auto !p-1 sm:!p-1.5 !rounded-md hover:!bg-zinc-100 dark:hover:!bg-zinc-800/50 !text-zinc-600 hover:!text-zinc-800 dark:!text-zinc-400 dark:hover:!text-zinc-400 !shrink-0",
+												copyButtonIcon: "!w-4 !h-4",
+												tabIndicator: "!bg-zinc-900 dark:!bg-zinc-100 ",
 											}}
 										/>
 									</div>
@@ -217,11 +223,15 @@ const App = () => {
 											behavior: "smooth",
 										});
 									}}
-									className="mt-8 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+									className="mt-8 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-100 transition-colors hover:bg-zinc-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
 								>
-									<span className="mr-2 font-bold">↓</span>
+									<span className="mr-2 font-bold text-zinc-100 dark:text-zinc-100">
+										↓
+									</span>
 									Check out the demo
-									<span className="ml-2 font-bold">↓</span>
+									<span className="ml-2 font-bold text-zinc-100 dark:text-zinc-100">
+										↓
+									</span>
 								</button>
 							</div>
 						</div>

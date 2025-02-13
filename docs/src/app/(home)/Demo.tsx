@@ -397,7 +397,7 @@ function App() {
 									</div>
 								</div>
 							)}
-							<div className="h-[calc(100vh-400px)] overflow-y-auto p-1">
+							<div className="h-[calc(100vh-400px)] overflow-y-auto p-1 text-left">
 								{Array.from(files.keys()).map((path) => (
 									<button
 										type="button"
@@ -463,7 +463,7 @@ function App() {
 							</div>
 						</div>
 						<div className="flex-1 overflow-hidden">
-							<div className="h-[calc(100vh-400px)] overflow-y-auto p-4 font-mono text-sm">
+							<div className="h-[calc(100vh-400px)] overflow-y-auto p-4 text-left font-mono text-sm">
 								<div className="rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/50">
 									{renderDiff(
 										selectedFile.previousContent,

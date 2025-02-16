@@ -17,8 +17,7 @@
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
 		"react-install-command": "^1.1.2",
-		"us-fs": "link:../../../Library/pnpm/global/5/node_modules/us-fs",
-		"use-fs": "^0.0.10"
+		"use-fs": "^0.0.12"
 	},
 	"devDependencies": {
 		"@iconify/react": "^5.2.0",
@@ -30,10 +29,5 @@
 		"postcss": "^8.5.1",
 		"tailwindcss": "^4.0.5",
 		"typescript": "^5.7.3"
-	},
-	"pnpm": {
-		"overrides": {
-			"use-fs": "link:../../../Library/pnpm/global/5/node_modules/use-fs"
-		}
 	}
 }

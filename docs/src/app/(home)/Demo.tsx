@@ -194,9 +194,13 @@ const App = () => {
 					content,
 					previousContent: null,
 				});
-			} catch (error) {
+			} catch (error: unknown) {
 				console.error("Error saving file:", error);
-				alert(`Failed to save file: ${error.message}`);
+				if (error instanceof Error) {
+					alert(`Failed to save file: ${error.message}`);
+				} else {
+					alert("Failed to save file: An unknown error occurred");
+				}
 			}
 		}
 	};

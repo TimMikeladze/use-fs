@@ -27,11 +27,13 @@ import { useFs } from "use-fs";
 
 function App() {
   const { 
-    onDirectorySelection, // Function to trigger directory selection dialog
-    files,               // Map of file paths to their contents
-    isBrowserSupported,  // Boolean indicating if File System API is supported
-    onClear,            // Function to clear selected directory and stop watching
-    isProcessing        // Boolean indicating if files are being processed
+    onDirectorySelection, 
+    files,
+    isBrowserSupported,
+    onClear,
+    isProcessing,
+    writeFile,
+    deleteFile
   } = useFs({
     // Optional array of filter functions to exclude files/directories. By default `commonFilters` is used to ignore .git, node_modules, etc.
     filters: [
@@ -68,6 +70,24 @@ function App() {
     return <div>Browser not supported</div>;
   }
 
+  const handleSaveFile = async (path: string, content: string) => {
+    try {
+      await writeFile(path, content, { truncate: true });
+      console.log('File saved successfully');
+    } catch (error) {
+      console.error('Error saving file:', error);
+    }
+  };
+
+  const handleDeleteFile = async (path: string) => {
+    try {
+      await deleteFile(path);
+      console.log('File deleted successfully');
+    } catch (error) {
+      console.error('Error deleting file:', error);
+    }
+  };
+
   return (
     <div>
       <button 
@@ -92,6 +112,12 @@ function App() {
               <div key={path}>
                 <h3>{path}</h3>
                 <pre>{content}</pre>
+                <button onClick={() => handleSaveFile(path, 'New content')}>
+                  Save Changes
+                </button>
+                <button onClick={() => handleDeleteFile(path)}>
+                  Delete File
+                </button>
               </div>
             ))}
           </div>
@@ -105,10 +131,12 @@ function App() {
 The hook provides several key features:
 
 1. **File System Access**: Prompts users to select a directory and maintains access to it.
-2. **File Watching**: Continuously monitors selected directory for changes.
-3. **Content Management**: Provides access to file contents and updates in real-time.
-4. **Filtering**: Built-in and custom filters to exclude unwanted files/directories.
-5. **Performance Optimizations**: 
+2. **File Writing**: Allows writing content to files with options for truncation and creation.
+3. **File Deletion**: Enables safe removal of files from the selected directory.
+4. **File Watching**: Continuously monitors selected directory for changes.
+5. **Content Management**: Provides access to file contents and updates in real-time.
+6. **Filtering**: Built-in and custom filters to exclude unwanted files/directories.
+7. **Performance Optimizations**: 
    - Batched file processing
    - Content caching
    - Debounced updates
@@ -132,3 +160,5 @@ The hook provides several key features:
 - `files: Map<string, string>` - Current map of file paths to contents
 - `isProcessing: boolean` - Whether files are being processed
 - `isBrowserSupported: boolean` - Whether File System API is supported
+- `writeFile: (path: string, data: string | ArrayBuffer | Blob, options?: FileWriteOptions) => Promise<void>` - Function to write to files
+- `deleteFile: (path: string) => Promise<void>` - Function to delete files

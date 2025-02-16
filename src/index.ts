@@ -7,6 +7,31 @@ import {
 	useState,
 } from "react";
 
+export type FileWriteOptions = {
+	/** Whether to create the file if it doesn't exist */
+	create?: boolean;
+	/** Whether to truncate the file if it exists */
+	truncate?: boolean;
+};
+
+export type FileOperations = {
+	/** Write data to a file at the specified path */
+	writeFile: (
+		path: string,
+		data: string | ArrayBuffer | Blob,
+		options?: FileWriteOptions,
+	) => Promise<void>;
+
+	/** Create a new file at the specified path */
+	createFile: (
+		path: string,
+		initialData?: string | ArrayBuffer | Blob,
+	) => Promise<FileSystemFileHandle>;
+
+	/** Delete a file at the specified path */
+	deleteFile: (path: string) => Promise<void>;
+};
+
 export type Filter = {
 	shouldIncludeFile: (
 		filepath: string,
@@ -109,6 +134,9 @@ export const distFilter: FilterFn = async () => {
 export const miscFilter: FilterFn = async () => {
 	const isMisc = (filepath: string) => {
 		if (filepath.endsWith(".DS_Store")) {
+			return true;
+		}
+		if (filepath.endsWith(".crswap")) {
 			return true;
 		}
 		return false;
@@ -497,6 +525,150 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 		}
 	};
 
+	const writeFile = useCallback(
+		async (
+			path: string,
+			data: string | ArrayBuffer | Blob,
+			options: FileWriteOptions = {},
+		) => {
+			// Validate path
+			if (!path || typeof path !== "string") {
+				throw new Error("Invalid file path");
+			}
+
+			const { create = true, truncate = false } = options;
+			const handle = handlesRef.current.get(path);
+
+			if (!handle) {
+				if (!create) {
+					throw new Error(`File not found: ${path}`);
+				}
+				// Create new file
+				const directoryPath = path.substring(0, path.lastIndexOf("/"));
+				const fileName = path.substring(path.lastIndexOf("/") + 1);
+
+				// Validate directory path
+				if (!(directoryPath && fileName)) {
+					throw new Error("Invalid file path structure");
+				}
+
+				const dirHandle = watchedDirectoriesRef.current.get(directoryPath);
+
+				if (!dirHandle) {
+					throw new Error(`Directory not found: ${directoryPath}`);
+				}
+
+				const fileHandle = await dirHandle.getFileHandle(fileName, {
+					create: true,
+				});
+				handlesRef.current.set(path, fileHandle);
+			}
+
+			const fileHandle = handlesRef.current.get(path);
+			if (!fileHandle) {
+				throw new Error(`File not found: ${path}`);
+			}
+
+			// Double-check we're writing to the correct file
+			if (fileHandle.name !== path.split("/").pop()) {
+				throw new Error("File path mismatch");
+			}
+
+			const writable = await fileHandle.createWritable({
+				keepExistingData: !truncate,
+			});
+
+			try {
+				await writable.write(data);
+				await writable.close();
+
+				// Update cache and trigger change events
+				const content =
+					typeof data === "string" ? data : await new Response(data).text();
+				fileContentsCache.current.set(path, {
+					content,
+					timestamp: Date.now(),
+				});
+
+				const changedFiles = new Map([[path, content]]);
+				const previousFiles = new Map(
+					Array.from(previousHandlesRef.current).map((filePath) => [
+						filePath,
+						filesMapRef.current[filePath],
+					]),
+				);
+
+				onChangeFile?.(changedFiles, previousFiles);
+				filesMapRef.current[path] = content;
+				setFiles(new Map(Object.entries(filesMapRef.current)));
+			} catch (error) {
+				await writable.abort();
+				throw error;
+			}
+		},
+		[onChangeFile],
+	);
+
+	const createFile = useCallback(
+		async (path: string, initialData?: string | ArrayBuffer | Blob) => {
+			const directoryPath = path.substring(0, path.lastIndexOf("/"));
+			const fileName = path.substring(path.lastIndexOf("/") + 1);
+			const dirHandle = watchedDirectoriesRef.current.get(directoryPath);
+
+			if (!dirHandle) {
+				throw new Error(`Directory not found: ${directoryPath}`);
+			}
+
+			const fileHandle = await dirHandle.getFileHandle(fileName, {
+				create: true,
+			});
+			handlesRef.current.set(path, fileHandle);
+
+			if (initialData) {
+				await writeFile(path, initialData, { truncate: true });
+			}
+
+			return fileHandle;
+		},
+		[writeFile],
+	);
+
+	const deleteFile = useCallback(
+		async (path: string) => {
+			const handle = handlesRef.current.get(path);
+			if (!handle) {
+				throw new Error(`File not found: ${path}`);
+			}
+
+			const directoryPath = path.substring(0, path.lastIndexOf("/"));
+			const fileName = path.substring(path.lastIndexOf("/") + 1);
+			const dirHandle = watchedDirectoriesRef.current.get(directoryPath);
+
+			if (!dirHandle) {
+				throw new Error(`Directory not found: ${directoryPath}`);
+			}
+
+			await dirHandle.removeEntry(fileName);
+			handlesRef.current.delete(path);
+			fileContentsCache.current.delete(path);
+
+			const deletedFiles = new Map([[path, filesMapRef.current[path]]]);
+			const previousFiles = new Map(
+				Array.from(previousHandlesRef.current).map((filePath) => [
+					filePath,
+					filesMapRef.current[filePath],
+				]),
+			);
+
+			delete filesMapRef.current[path];
+			previousHandlesRef.current.delete(path);
+
+			onDeleteFile?.(deletedFiles, previousFiles);
+			setFiles(new Map(Object.entries(filesMapRef.current)));
+		},
+		[onDeleteFile],
+	);
+
 	useUnmount(() => {
 		clearWatchedDirectories();
 	});
@@ -506,8 +678,12 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 		onDirectorySelection,
 		onClear: clearWatchedDirectories,
 		files: debouncedFiles,
+		setFiles,
 		isProcessing,
 		isBrowserSupported: window !== undefined && "showDirectoryPicker" in window,
+		writeFile,
+		createFile,
+		deleteFile,
 	};
 };
 

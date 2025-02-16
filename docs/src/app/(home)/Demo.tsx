@@ -25,8 +25,18 @@ const App = () => {
 			timestamp: number;
 		}>
 	>([]);
+	const [isEditMode, setIsEditMode] = React.useState(false);
+	const [editableContent, setEditableContent] = React.useState("");
+	const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
 
-	const { onDirectorySelection, onClear, files, isBrowserSupported } = useFs({
+	const {
+		onDirectorySelection,
+		onClear,
+		files,
+		isBrowserSupported,
+		writeFile,
+		setFiles,
+	} = useFs({
 		filters: commonFilters,
 		onFilesAdded: (newFiles, previousFiles) => {
 			console.log("onFilesAdded", newFiles, previousFiles);
@@ -147,6 +157,48 @@ const App = () => {
 		}
 
 		return diff;
+	};
+
+	const handleFileSelect = (path: string) => {
+		const content = files.get(path) || null;
+		setSelectedFile({
+			path,
+			content,
+			previousContent: null,
+		});
+		setIsEditMode(false);
+		setEditableContent(content || "");
+		setHasUnsavedChanges(false);
+	};
+
+	const handleSave = async () => {
+		if (selectedFile.path) {
+			try {
+				// Validate the selected file path
+				if (!files.has(selectedFile.path)) {
+					throw new Error("Selected file no longer exists");
+				}
+
+				await writeFile(selectedFile.path, editableContent, { truncate: true });
+				setSelectedFile((prev) => ({
+					...prev,
+					previousContent: prev.content,
+					content: editableContent,
+				}));
+				setHasUnsavedChanges(false);
+
+				// Instead of using setFiles, we can force a refresh by clearing and resetting the selected file
+				const content = files.get(selectedFile.path) || null;
+				setSelectedFile({
+					path: selectedFile.path,
+					content,
+					previousContent: null,
+				});
+			} catch (error) {
+				console.error("Error saving file:", error);
+				alert(`Failed to save file: ${error.message}`);
+			}
+		}
 	};
 
 	return (
@@ -403,13 +455,7 @@ function App() {
 										type="button"
 										key={path}
 										className="group relative w-full rounded-lg px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800"
-										onClick={() =>
-											setSelectedFile({
-												path,
-												content: files.get(path) || null,
-												previousContent: null,
-											})
-										}
+										onClick={() => handleFileSelect(path)}
 									>
 										<div className="flex items-center">
 											<svg
@@ -460,16 +506,94 @@ function App() {
 											"Click a file to view a real-time diff"}
 									</span>
 								</div>
+								{selectedFile.path && (
+									<div className="flex items-center gap-2">
+										{isEditMode && hasUnsavedChanges && (
+											<button
+												type="button"
+												onClick={handleSave}
+												className="inline-flex items-center rounded-md bg-emerald-500 px-3 py-1.5 font-medium text-sm text-white hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+											>
+												<svg
+													className="mr-1.5 h-4 w-4"
+													fill="none"
+													viewBox="0 0 24 24"
+													stroke="currentColor"
+												>
+													<title>Save changes</title>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+													/>
+												</svg>
+												Save
+											</button>
+										)}
+										<button
+											type="button"
+											onClick={() => {
+												if (isEditMode && hasUnsavedChanges) {
+													if (window.confirm("Discard unsaved changes?")) {
+														setIsEditMode(false);
+														setHasUnsavedChanges(false);
+													}
+												} else {
+													setIsEditMode(!isEditMode);
+													if (!isEditMode) {
+														setEditableContent(selectedFile.content || "");
+													}
+												}
+											}}
+											className="inline-flex items-center rounded-md border border-zinc-300 bg-white px-3 py-1.5 font-medium text-sm text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+										>
+											<svg
+												className="mr-1.5 h-4 w-4"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+											>
+												<title>{isEditMode ? "View mode" : "Edit mode"}</title>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d={
+														isEditMode
+															? "M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+															: "M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+													}
+												/>
+											</svg>
+											{isEditMode ? "View" : "Edit"}
+										</button>
+									</div>
+								)}
 							</div>
 						</div>
 						<div className="flex-1 overflow-hidden">
 							<div className="h-[calc(100vh-400px)] overflow-y-auto p-4 text-left font-mono text-sm">
-								<div className="rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/50">
-									{renderDiff(
-										selectedFile.previousContent,
-										selectedFile.content,
-									)}
-								</div>
+								{isEditMode ? (
+									<textarea
+										value={editableContent}
+										onChange={(e) => {
+											setEditableContent(e.target.value);
+											setHasUnsavedChanges(
+												e.target.value !== selectedFile.content,
+											);
+										}}
+										className="h-full w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 p-4 font-mono text-sm focus:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-300 dark:focus:border-zinc-700"
+										placeholder="Edit file content..."
+									/>
+								) : (
+									<div className="rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/50">
+										{renderDiff(
+											selectedFile.previousContent,
+											selectedFile.content,
+										)}
+									</div>
+								)}
 							</div>
 						</div>
 					</div>

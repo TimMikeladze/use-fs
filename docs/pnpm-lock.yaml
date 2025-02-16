@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  use-fs: link:../../../Library/pnpm/global/5/node_modules/use-fs
+
 importers:
 
   .:
@@ -32,9 +35,12 @@ importers:
       react-install-command:
         specifier: ^1.1.2
         version: 1.1.2(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      us-fs:
+        specifier: link:../../../Library/pnpm/global/5/node_modules/us-fs
+        version: link:../../../Library/pnpm/global/5/node_modules/us-fs
       use-fs:
-        specifier: ^0.0.10
-        version: 0.0.10(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+        specifier: link:../../../Library/pnpm/global/5/node_modules/use-fs
+        version: link:../../../Library/pnpm/global/5/node_modules/use-fs
     devDependencies:
       '@iconify/react':
         specifier: ^5.2.0
@@ -1222,10 +1228,6 @@ packages:
     resolution: {integrity: sha512-fPU6BHNpsyIhr8yyMpTLLxAbkaK8ArIBcmZIRiBLiDhjeqvXolaEmDGmELFuX9I4xDcaKKcJl+TKZLqruBbmWA==}
     engines: {node: '>=8.0.0'}
 
-  ignore@7.0.3:
-    resolution: {integrity: sha512-bAH5jbK/F3T3Jls4I0SO1hmPR0dKU0a7+SY6n1yzRtG54FLO8d6w/nxLFX2Nb7dBu6cCWXPaAME6cYqFUMmuCA==}
-    engines: {node: '>= 4'}
-
   image-size@1.2.0:
     resolution: {integrity: sha512-4S8fwbO6w3GeCVN6OPtA9I5IGKkcDMPcKndtUlpJuCwu7JLjtj7JZpwqLuyY2nrmQT3AWsCJLSKPsc2mPBSl3w==}
     engines: {node: '>=16.x'}
@@ -1855,13 +1857,6 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
-
-  use-fs@0.0.10:
-    resolution: {integrity: sha512-eJuFHEaaff093abttKEdW/2V2etU1yTRJsesMZ2YaB4D1a+Gwqq43SvREAsjJGrcuNIsVlty/nVTXU0WrRUQXQ==}
-    engines: {node: '>=18.0.0'}
-    peerDependencies:
-      react: '>=17'
-      react-dom: '>=17'
 
   use-sidecar@1.1.3:
     resolution: {integrity: sha512-Fedw0aZvkhynoPYlA5WXrMCAMm+nSWdZt6lzJQ7Ok8S6Q+VsHmHpRWndVRJ8Be0ZbkfPc5LRYH+5XrzXcEeLRQ==}
@@ -3042,8 +3037,6 @@ snapshots:
       css-line-break: 2.1.0
       text-segmentation: 1.0.3
 
-  ignore@7.0.3: {}
-
   image-size@1.2.0:
     dependencies:
       queue: 6.0.2
@@ -3978,12 +3971,6 @@ snapshots:
       tslib: 2.8.1
     optionalDependencies:
       '@types/react': 19.0.8
-
-  use-fs@0.0.10(react-dom@19.0.0(react@19.0.0))(react@19.0.0):
-    dependencies:
-      ignore: 7.0.3
-      react: 19.0.0
-      react-dom: 19.0.0(react@19.0.0)
 
   use-sidecar@1.1.3(@types/react@19.0.8)(react@19.0.0):
     dependencies:

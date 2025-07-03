@@ -304,6 +304,7 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 	const intervalRef = useRef<NodeJS.Timeout | null>(null);
 	const [files, setFiles] = useState<Map<string, string>>(new Map());
 	const [isProcessing, setIsProcessing] = useState(false);
+	const [isPolling, setIsPolling] = useState(false);
 
 	// Add a cache for file contents
 	const fileContentsCache = useRef<
@@ -324,6 +325,7 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 		previousFilesMapRef.current = {};
 		fileContentsCache.current.clear();
 		setFiles(new Map());
+		setIsPolling(false);
 	}, []);
 
 	const processWatchedDirectories = useCallback(async () => {
@@ -499,6 +501,7 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 					}
 				})();
 			}, props.pollInterval || DEFAULT_POLL_INTERVAL);
+			setIsPolling(true);
 		}
 	}, [
 		processWatchedDirectories,
@@ -506,6 +509,20 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 		isProcessing,
 		props.pollInterval,
 	]);
+
+	const stopPolling = useCallback(() => {
+		if (intervalRef.current) {
+			clearInterval(intervalRef.current);
+			intervalRef.current = null;
+			setIsPolling(false);
+		}
+	}, []);
+
+	const startPolling = useCallback(() => {
+		if (watchedDirectoriesRef.current.size > 0) {
+			startPollingWatchedDirectories();
+		}
+	}, [startPollingWatchedDirectories]);
 
 	const onDirectorySelection = async () => {
 		try {
@@ -684,6 +701,9 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 		writeFile,
 		createFile,
 		deleteFile,
+		stopPolling,
+		startPolling,
+		isPolling,
 	};
 };
 

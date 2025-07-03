@@ -36,6 +36,9 @@ const App = () => {
 		isBrowserSupported,
 		writeFile,
 		setFiles,
+		startPolling,
+		stopPolling,
+		isPolling,
 	} = useFs({
 		filters: commonFilters,
 		onFilesAdded: (newFiles, previousFiles) => {
@@ -280,7 +283,7 @@ const App = () => {
 											behavior: "smooth",
 										});
 									}}
-									className="mt-8 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-100 transition-colors hover:bg-zinc-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+									className="mt-8 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-100 transition-colors hover:bg-zinc-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
 								>
 									<span className="mr-2 font-bold text-zinc-100 dark:text-zinc-100">
 										↓
@@ -382,10 +385,10 @@ function App() {
 										type="button"
 										onClick={handleDirectorySelection}
 										disabled={isLoading}
-										className="inline-flex items-center rounded-md bg-zinc-900 px-3 py-1.5 font-medium text-sm text-white hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:focus:ring-zinc-300 dark:hover:bg-zinc-200"
+										className="inline-flex items-center rounded-md bg-zinc-900 px-2 py-1 font-medium text-white text-xs hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:focus:ring-zinc-300 dark:hover:bg-zinc-200"
 									>
 										<svg
-											className="mr-1.5 h-4 w-4"
+											className="mr-1 h-3 w-3"
 											fill="none"
 											viewBox="0 0 24 24"
 											stroke="currentColor"
@@ -403,11 +406,11 @@ function App() {
 									<button
 										type="button"
 										onClick={handleClear}
-										disabled={isLoading}
-										className="inline-flex items-center rounded-md border border-zinc-300 bg-white px-3 py-1.5 font-medium text-sm text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+										disabled={isLoading || files.size === 0}
+										className="inline-flex items-center rounded-md border border-zinc-300 bg-white px-2 py-1 font-medium text-xs text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
 									>
 										<svg
-											className="mr-1.5 h-4 w-4"
+											className="mr-1 h-3 w-3"
 											fill="none"
 											viewBox="0 0 24 24"
 											stroke="currentColor"
@@ -422,9 +425,66 @@ function App() {
 										</svg>
 										Clear
 									</button>
+									{isPolling ? (
+										<button
+											type="button"
+											onClick={stopPolling}
+											disabled={isLoading}
+											className="inline-flex items-center rounded-md border border-red-300 bg-red-50 px-2 py-1 font-medium text-red-700 text-xs hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-700/50 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30"
+										>
+											<svg
+												className="mr-1 h-3 w-3"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+											>
+												<title>Stop polling icon</title>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z M9 10l6 6m0-6l-6 6"
+												/>
+											</svg>
+											Stop Polling
+										</button>
+									) : (
+										<button
+											type="button"
+											onClick={startPolling}
+											disabled={isLoading || files.size === 0}
+											className="inline-flex items-center rounded-md border border-green-300 bg-green-50 px-2 py-1 font-medium text-green-700 text-xs hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-green-700/50 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30"
+										>
+											<svg
+												className="mr-1 h-3 w-3"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+											>
+												<title>Start polling icon</title>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293H15M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+												/>
+											</svg>
+											Start Polling
+										</button>
+									)}
 								</div>
-								<div className="text-sm text-zinc-500 dark:text-zinc-400">
-									{files.size} files
+								<div className="flex items-center space-x-3 text-sm text-zinc-500 dark:text-zinc-400">
+									<span>{files.size} files</span>
+									<div className="flex items-center space-x-1">
+										<div
+											className={`h-2 w-2 rounded-full ${
+												isPolling ? "animate-pulse bg-green-500" : "bg-gray-400"
+											}`}
+										/>
+										<span className="text-xs">
+											{isPolling ? "Polling Active" : "Polling Stopped"}
+										</span>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -458,12 +518,12 @@ function App() {
 									<button
 										type="button"
 										key={path}
-										className="group relative w-full rounded-lg px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800"
+										className="group relative w-full rounded-lg px-2 py-1.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800"
 										onClick={() => handleFileSelect(path)}
 									>
 										<div className="flex items-center">
 											<svg
-												className="mr-2 h-4 w-4 text-zinc-400"
+												className="mr-1.5 h-3 w-3 text-zinc-400"
 												fill="none"
 												viewBox="0 0 24 24"
 												stroke="currentColor"
@@ -476,7 +536,7 @@ function App() {
 													d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
 												/>
 											</svg>
-											<span className="text-sm text-zinc-700 dark:text-zinc-300">
+											<span className="text-xs text-zinc-700 dark:text-zinc-300">
 												{path}
 											</span>
 										</div>
@@ -516,10 +576,10 @@ function App() {
 											<button
 												type="button"
 												onClick={handleSave}
-												className="inline-flex items-center rounded-md bg-emerald-500 px-3 py-1.5 font-medium text-sm text-white hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+												className="inline-flex items-center rounded-md bg-emerald-500 px-2 py-1 font-medium text-white text-xs hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-700"
 											>
 												<svg
-													className="mr-1.5 h-4 w-4"
+													className="mr-1 h-3 w-3"
 													fill="none"
 													viewBox="0 0 24 24"
 													stroke="currentColor"
@@ -550,10 +610,10 @@ function App() {
 													}
 												}
 											}}
-											className="inline-flex items-center rounded-md border border-zinc-300 bg-white px-3 py-1.5 font-medium text-sm text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+											className="inline-flex items-center rounded-md border border-zinc-300 bg-white px-2 py-1 font-medium text-xs text-zinc-700 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
 										>
 											<svg
-												className="mr-1.5 h-4 w-4"
+												className="mr-1 h-3 w-3"
 												fill="none"
 												viewBox="0 0 24 24"
 												stroke="currentColor"

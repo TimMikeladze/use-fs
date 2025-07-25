@@ -3,6 +3,7 @@ import {
 	type EffectCallback,
 	useCallback,
 	useEffect,
+	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -708,6 +709,377 @@ export const useFileSystem = (props: UseFileHandlingHookProps) => {
 };
 
 export const useFs = useFileSystem;
+
+// OPFS (Origin Private File System) Hook Types
+export interface UseOPFSHookProps {
+	/** Optional callback when errors occur */
+	onError?: (error: Error) => void;
+}
+
+export interface OPFSFileInfo {
+	name: string;
+	path: string;
+	kind: "file" | "directory";
+	size?: number;
+}
+
+export interface UseOPFSReturn {
+	/** Whether OPFS is supported in the current browser */
+	isSupported: boolean;
+	/** Read a file from OPFS */
+	readFile: (path: string) => Promise<string>;
+	/** Write content to a file in OPFS */
+	writeFile: (
+		path: string,
+		content: string | ArrayBuffer | Blob,
+	) => Promise<void>;
+	/** Delete a file from OPFS */
+	deleteFile: (path: string) => Promise<void>;
+	/** Create a directory in OPFS */
+	createDirectory: (path: string) => Promise<void>;
+	/** Delete a directory from OPFS */
+	deleteDirectory: (path: string, recursive?: boolean) => Promise<void>;
+	/** List files and directories in a given path */
+	listFiles: (path?: string) => Promise<OPFSFileInfo[]>;
+	/** Check if a file or directory exists */
+	exists: (path: string) => Promise<boolean>;
+	/** Get file information */
+	getFileInfo: (path: string) => Promise<OPFSFileInfo>;
+}
+
+/**
+ * React hook for working with the Origin Private File System (OPFS).
+ * OPFS provides a private file system for web applications that persists across sessions
+ * without requiring user permission prompts.
+ */
+export const useOPFS = (props: UseOPFSHookProps = {}): UseOPFSReturn => {
+	const { onError } = props;
+
+	// Check if OPFS is supported
+	const isSupported = useMemo(() => {
+		return Boolean(
+			typeof navigator !== "undefined" &&
+				navigator.storage &&
+				typeof navigator.storage.getDirectory === "function",
+		);
+	}, []);
+
+	// Get the root directory handle
+	const getRootDirectory = useCallback(async () => {
+		if (!isSupported) {
+			throw new Error("OPFS is not supported in this browser");
+		}
+		return await navigator.storage.getDirectory();
+	}, [isSupported]);
+
+	// Helper to parse path and get directory/file handles
+	const getHandleFromPath = useCallback(
+		async (path: string, create = false) => {
+			const rootDir = await getRootDirectory();
+			const parts = path.split("/").filter(Boolean);
+
+			if (parts.length === 0) {
+				return { handle: rootDir, name: "", isRoot: true };
+			}
+
+			let currentDir = rootDir;
+			const fileName = parts[parts.length - 1];
+			const directories = parts.slice(0, -1);
+
+			// Navigate through directories
+			for (const dir of directories) {
+				try {
+					currentDir = await currentDir.getDirectoryHandle(dir, { create });
+				} catch (error) {
+					if (!create) {
+						throw new Error(`Directory not found: ${dir}`);
+					}
+					throw error;
+				}
+			}
+
+			return { handle: currentDir, name: fileName, isRoot: false };
+		},
+		[getRootDirectory],
+	);
+
+	const readFile = useCallback(
+		async (path: string): Promise<string> => {
+			try {
+				const { handle, name } = await getHandleFromPath(path);
+				if (name === "") {
+					throw new Error("Cannot read a directory");
+				}
+
+				const fileHandle = await (
+					handle as FileSystemDirectoryHandle
+				).getFileHandle(name);
+				const file = await fileHandle.getFile();
+				return await file.text();
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error ? error.message : "Unknown error reading file";
+				const readError = new Error(
+					`Failed to read file ${path}: ${errorMessage}`,
+				);
+				onError?.(readError);
+				throw readError;
+			}
+		},
+		[getHandleFromPath, onError],
+	);
+
+	const writeFile = useCallback(
+		async (
+			path: string,
+			content: string | ArrayBuffer | Blob,
+		): Promise<void> => {
+			try {
+				const { handle, name } = await getHandleFromPath(path, true);
+				if (name === "") {
+					throw new Error("Cannot write to a directory");
+				}
+
+				const fileHandle = await (
+					handle as FileSystemDirectoryHandle
+				).getFileHandle(name, { create: true });
+				const writable = await fileHandle.createWritable();
+
+				try {
+					await writable.write(content);
+					await writable.close();
+				} catch (error) {
+					await writable.abort();
+					throw error;
+				}
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error ? error.message : "Unknown error writing file";
+				const writeError = new Error(
+					`Failed to write file ${path}: ${errorMessage}`,
+				);
+				onError?.(writeError);
+				throw writeError;
+			}
+		},
+		[getHandleFromPath, onError],
+	);
+
+	const deleteFile = useCallback(
+		async (path: string): Promise<void> => {
+			try {
+				const { handle, name } = await getHandleFromPath(path);
+				if (name === "") {
+					throw new Error("Cannot delete root directory");
+				}
+
+				await (handle as FileSystemDirectoryHandle).removeEntry(name);
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error
+						? error.message
+						: "Unknown error deleting file";
+				const deleteError = new Error(
+					`Failed to delete file ${path}: ${errorMessage}`,
+				);
+				onError?.(deleteError);
+				throw deleteError;
+			}
+		},
+		[getHandleFromPath, onError],
+	);
+
+	const createDirectory = useCallback(
+		async (path: string): Promise<void> => {
+			try {
+				const { handle, name } = await getHandleFromPath(path, true);
+				if (name !== "") {
+					// Create the directory explicitly
+					await (handle as FileSystemDirectoryHandle).getDirectoryHandle(name, {
+						create: true,
+					});
+				}
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error
+						? error.message
+						: "Unknown error creating directory";
+				const createError = new Error(
+					`Failed to create directory ${path}: ${errorMessage}`,
+				);
+				onError?.(createError);
+				throw createError;
+			}
+		},
+		[getHandleFromPath, onError],
+	);
+
+	const deleteDirectory = useCallback(
+		async (path: string, recursive = false): Promise<void> => {
+			try {
+				const { handle, name } = await getHandleFromPath(path);
+				if (name === "") {
+					throw new Error("Cannot delete root directory");
+				}
+
+				await (handle as FileSystemDirectoryHandle).removeEntry(name, {
+					recursive,
+				});
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error
+						? error.message
+						: "Unknown error deleting directory";
+				const deleteError = new Error(
+					`Failed to delete directory ${path}: ${errorMessage}`,
+				);
+				onError?.(deleteError);
+				throw deleteError;
+			}
+		},
+		[getHandleFromPath, onError],
+	);
+
+	const listFiles = useCallback(
+		async (path = ""): Promise<OPFSFileInfo[]> => {
+			try {
+				const { handle, name, isRoot } = await getHandleFromPath(path);
+				let directoryHandle: FileSystemDirectoryHandle;
+
+				if (isRoot) {
+					directoryHandle = handle as FileSystemDirectoryHandle;
+				} else {
+					directoryHandle = await (
+						handle as FileSystemDirectoryHandle
+					).getDirectoryHandle(name);
+				}
+
+				const files: OPFSFileInfo[] = [];
+				for await (const [
+					entryName,
+					entryHandle,
+				] of directoryHandle.entries()) {
+					const entryPath = path ? `${path}/${entryName}` : entryName;
+					const fileInfo: OPFSFileInfo = {
+						name: entryName,
+						path: entryPath,
+						kind: entryHandle.kind,
+					};
+
+					if (entryHandle.kind === "file") {
+						const file = await (entryHandle as FileSystemFileHandle).getFile();
+						fileInfo.size = file.size;
+					}
+
+					files.push(fileInfo);
+				}
+
+				return files;
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error
+						? error.message
+						: "Unknown error listing files";
+				const listError = new Error(
+					`Failed to list files in ${path}: ${errorMessage}`,
+				);
+				onError?.(listError);
+				throw listError;
+			}
+		},
+		[getHandleFromPath, onError],
+	);
+
+	const exists = useCallback(
+		async (path: string): Promise<boolean> => {
+			try {
+				const { handle, name, isRoot } = await getHandleFromPath(path);
+
+				if (isRoot) {
+					return true; // Root always exists
+				}
+
+				try {
+					await (handle as FileSystemDirectoryHandle).getFileHandle(name);
+					return true;
+				} catch {
+					try {
+						await (handle as FileSystemDirectoryHandle).getDirectoryHandle(
+							name,
+						);
+						return true;
+					} catch {
+						return false;
+					}
+				}
+			} catch {
+				return false;
+			}
+		},
+		[getHandleFromPath],
+	);
+
+	const getFileInfo = useCallback(
+		async (path: string): Promise<OPFSFileInfo> => {
+			try {
+				const { handle, name, isRoot } = await getHandleFromPath(path);
+
+				if (isRoot) {
+					return {
+						name: "",
+						path: "",
+						kind: "directory",
+					};
+				}
+
+				// Try as file first
+				try {
+					const fileHandle = await (
+						handle as FileSystemDirectoryHandle
+					).getFileHandle(name);
+					const file = await fileHandle.getFile();
+					return {
+						name,
+						path,
+						kind: "file",
+						size: file.size,
+					};
+				} catch {
+					// Try as directory
+					await (handle as FileSystemDirectoryHandle).getDirectoryHandle(name);
+					return {
+						name,
+						path,
+						kind: "directory",
+					};
+				}
+			} catch (error) {
+				const errorMessage =
+					error instanceof Error
+						? error.message
+						: "Unknown error getting file info";
+				const infoError = new Error(
+					`Failed to get info for ${path}: ${errorMessage}`,
+				);
+				onError?.(infoError);
+				throw infoError;
+			}
+		},
+		[getHandleFromPath, onError],
+	);
+
+	return {
+		isSupported,
+		readFile,
+		writeFile,
+		deleteFile,
+		createDirectory,
+		deleteDirectory,
+		listFiles,
+		exists,
+		getFileInfo,
+	};
+};
 
 // below is copied from usehooks-ts
 

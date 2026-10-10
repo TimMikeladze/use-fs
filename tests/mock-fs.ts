@@ -12,6 +12,12 @@ interface FileNode {
 	name: string;
 	content: string;
 	lastModified: number;
+	/**
+	 * Makes reads, writable streams and removal reject with
+	 * `NoModificationAllowedError`, simulating a worker holding a sync access
+	 * handle on the file.
+	 */
+	locked?: boolean;
 }
 
 interface DirectoryNode {
@@ -36,6 +42,14 @@ const domException = (name: string, message: string) => {
 	error.name = name;
 	return error;
 };
+
+const lockedError = (name: string) =>
+	domException("NoModificationAllowedError", `"${name}" is locked`);
+
+const hasLockedFile = (node: Node): boolean =>
+	node.kind === "file"
+		? node.locked === true
+		: Array.from(node.children.values()).some(hasLockedFile);
 
 const toText = async (
 	chunk: string | ArrayBuffer | ArrayBufferView | Blob,
@@ -75,6 +89,10 @@ export class MockFileHandle {
 	}
 
 	getFile() {
+		if (this.node.locked) {
+			return Promise.reject(lockedError(this.node.name));
+		}
+
 		return Promise.resolve(
 			new File([this.node.content], this.node.name, {
 				lastModified: this.node.lastModified,
@@ -84,6 +102,11 @@ export class MockFileHandle {
 
 	createWritable(options?: { keepExistingData?: boolean }) {
 		const node = this.node;
+
+		if (node.locked) {
+			return Promise.reject(lockedError(node.name));
+		}
+
 		let buffer = options?.keepExistingData === true ? node.content : "";
 		let aborted = false;
 
@@ -220,6 +243,10 @@ export class MockDirectoryHandle {
 			);
 		}
 
+		if (hasLockedFile(existing)) {
+			return Promise.reject(lockedError(name));
+		}
+
 		if (
 			existing.kind === "directory" &&
 			existing.children.size > 0 &&
@@ -332,6 +359,19 @@ export class MockFileSystem {
 	setUnreadable(path: string, unreadable = true) {
 		this.resolveDirectory(path.split("/").filter(Boolean), false).unreadable =
 			unreadable;
+	}
+
+	/** Locks a file as a worker's sync access handle would. */
+	setLocked(path: string, locked = true) {
+		const segments = path.split("/").filter(Boolean);
+		const name = segments.pop() as string;
+		const node = this.resolveDirectory(segments, false).children.get(name);
+
+		if (node?.kind !== "file") {
+			throw new Error(`"${path}" is not a file`);
+		}
+
+		node.locked = locked;
 	}
 
 	/** Reads a file's current contents straight from the in-memory tree. */

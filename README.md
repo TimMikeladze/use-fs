@@ -9,7 +9,9 @@ Point the hook at a directory and it watches everything inside it, re-rendering 
 
 Both are the same `FileSystemDirectoryHandle` underneath, so they are the same hook, the same `files` map and the same writes - only the backing store changes.
 
-> ⚠️ Note: The directory picker is desktop Chrome, Edge and Opera only - check `isBrowserSupported`. OPFS works in every current browser - check `isOpfsSupported`. See [which store to use](#-picker-or-opfs).
+> ⚠️ Note: The directory picker is desktop Chrome, Edge and Opera only - check `isBrowserSupported`. OPFS works in every current browser - check `isOpfsSupported`, and `isOpfsWritable` before writing from the main thread. See [which store to use](#-picker-or-opfs).
+
+> 🤖 Using a coding agent? Point it at [use-fs.com/llms.txt](https://use-fs.com/llms.txt) or [use-fs.com/AGENTS.md](https://use-fs.com/AGENTS.md).
 
 ## 📡 Install
 
@@ -101,8 +103,8 @@ Same hook, same `files` map, same writes. What differs is who owns the bytes and
 | | Folder on disk | Browser storage (OPFS) |
 | --- | --- | --- |
 | Entry point | `onDirectorySelection()`, or `addDirectory(handle)` | `addOpfsDirectory()` |
-| Support flag | `isBrowserSupported` | `isOpfsSupported` |
-| Browsers | Chrome, Edge, Opera - desktop only | Chrome, Edge, Opera, Safari 17+, Firefox 111+ |
+| Support flag | `isBrowserSupported` | `isOpfsSupported` (read), `isOpfsWritable` (write) |
+| Browsers | Chrome, Edge, Opera - desktop only | Read: Chrome 86+, Safari 15.2+, Firefox 111+. Write from the hook: Chrome 86+, Safari 26+, Firefox 111+ |
 | The user sees | A picker, then a permission prompt on first write | Nothing at all |
 | User gesture | Required - call it from an event handler | Not required - an effect is fine |
 | Where the bytes are | Real files, wherever the user pointed you | A private store scoped to your origin |
@@ -182,10 +184,44 @@ Worth knowing:
 
 - Contents survive a reload and are private to the origin. The user can wipe them by clearing site data, and the browser may evict them under storage pressure - call `navigator.storage.persist()` to ask for protection.
 - Changes are detected from `lastModified` and `size`. OPFS writes are fast enough that a same-size rewrite inside a single millisecond can be missed, which only matters for writes coming from a worker or another tab - writes made through the hook update state directly.
-- `createSyncAccessHandle` is worker-only and is not used here. The hook writes through `createWritable`, which needs Chrome 86+, Safari 17+ or Firefox 111+.
+- The hook writes through `createWritable`, which needs Chrome 86+, Safari 26+ or Firefox 111+. Older Safari can read OPFS but only write it from a worker - `isOpfsWritable` is `false` there and `writeFile` rejects with a `NotSupportedError`. Watching still works; see [Working alongside a worker](#working-alongside-a-worker).
 - Quota is finite. A write that exceeds it rejects with `QuotaExceededError`, surfaced through `error` and `onError`. `navigator.storage.estimate()` reports the headroom.
 
-`getOpfsRoot()` and `isOpfsSupported()` are exported too, for reaching the handle directly - `(await getOpfsRoot({ name: "notes" })).removeEntry("todo.md")`.
+### Working alongside a worker
+
+`createSyncAccessHandle()` is OPFS's fast path - synchronous, in-place reads and writes, and the only way SQLite WASM and similar get native-like speed. It is worker-only, so it is not something the hook uses. The two split the work:
+
+- **The worker owns the bytes.** It opens sync access handles and does the heavy I/O.
+- **The hook watches the results.** Mount the directory the worker writes into; changes appear on the next poll after the worker calls `flush()` or `close()` on its handle.
+
+```ts
+// worker.ts
+const root = await navigator.storage.getDirectory();
+const dir = await root.getDirectoryHandle("exports", { create: true });
+const file = await dir.getFileHandle("report.json", { create: true });
+const handle = await file.createSyncAccessHandle();
+
+handle.truncate(0);
+handle.write(new TextEncoder().encode(JSON.stringify(report)));
+handle.flush();
+handle.close();
+```
+
+```tsx
+// Component - sees exports/report.json within one poll of the worker closing it.
+const { files, addOpfsDirectory } = useFs();
+useEffect(() => {
+  addOpfsDirectory({ name: "exports" });
+}, [addOpfsDirectory]);
+```
+
+Things to know:
+
+- **Keep databases out of the watched tree.** A database a worker writes to changes on nearly every poll. Mount a directory the database is not in, or opt into `binaryFilter` - `useFs({ filters: [...commonFilters, binaryFilter] })` - which skips `.sqlite`, `.db`, their `-wal` / `-shm` / `-journal` files, `.wasm` and other binary files.
+- **Sync access handles are exclusive.** While a worker holds one, `writeFile`, `deleteFile` and `deleteDirectory` on that file reject with an error named `NoModificationAllowedError` whose message names the path - check it with `isLockedError(error)` and retry after the worker closes the handle.
+- **A locked file keeps its last known contents.** If reading it fails during a scan, it is reported through `onError` once - not on every poll - and the error is reported again only if it fails again after a clean read.
+
+`getOpfsRoot()`, `isOpfsSupported()` and `isOpfsWritable()` are exported too, for reaching the handle directly - `(await getOpfsRoot({ name: "notes" })).removeEntry("todo.md")`.
 
 ## 🔍 How watching works
 
@@ -195,7 +231,7 @@ The hook re-scans every watched directory on an interval:
 2. Each discovered file is stat'd. Contents are only re-read when `lastModified` or `size` changed, so a steady-state poll over a large tree does no content I/O.
 3. Added, changed and deleted files are diffed against the previous scan and reported through the callbacks. Rendered state updates are coalesced by `debounceInterval`; callbacks always fire immediately.
 
-Scans never throw. A directory that cannot be enumerated (revoked permission, removed mid-scan) keeps its last known contents instead of being reported as deleted, and the error is surfaced through `error` and `onError`.
+Scans never throw. A directory that cannot be enumerated (revoked permission, removed mid-scan) or a file that cannot be read (locked by a worker) keeps its last known contents instead of being reported as deleted, and the error is surfaced through `error` and `onError` - once per file until it reads cleanly again.
 
 ## 🔐 Permissions
 
@@ -252,8 +288,9 @@ Built-in filters:
 
 - `distFilter` - prunes `node_modules`, `dist`, `build`, `out`, `vendor`, `coverage`, `.next`, `.nuxt`, `.turbo`, `.cache`, `.output`, `.svelte-kit`, `.parcel-cache`
 - `miscFilter` - drops `.DS_Store`, `Thumbs.db`, `desktop.ini` and `*.crswap`
+- `binaryFilter` - opt in, not part of `commonFilters`. Drops binary files by case-insensitive suffix (`DEFAULT_BINARY_FILE_SUFFIXES`): SQLite databases and their `-wal` / `-shm` / `-journal` files, `.wasm`, archives, images, audio, video, fonts and `.pdf`. Worth adding when a worker writes a database into a watched directory - otherwise each write means re-reading the whole file as text
 - `gitFilter` - honours nested `.gitignore` files and always skips `.git`
-- `commonFilters` - all of the above
+- `commonFilters` - `distFilter`, `miscFilter` and `gitFilter`
 
 Builders: `createFilter`, `createExcludedDirectoryFilter`, `createExcludedFileFilter`.
 
@@ -287,6 +324,7 @@ Options are read at the moment they are used, so inline callbacks and filter arr
 | `isPolling: boolean` | Whether the hook is polling for changes |
 | `isBrowserSupported: boolean` | Whether the directory picker is available |
 | `isOpfsSupported: boolean` | Whether the origin private file system is available |
+| `isOpfsWritable: boolean` | Whether `writeFile` / `createFile` can write to OPFS (`false` in Safari before 26) |
 | `error: Error \| null` | The most recent recoverable error |
 | `onDirectorySelection(options?)` | Opens the picker and watches the chosen directory. Resolves to its path, or `null` if the picker was dismissed |
 | `addDirectory(handle, options?)` | Watches an existing handle. Resolves to the path it is exposed under |
@@ -305,7 +343,7 @@ Options are read at the moment they are used, so inline callbacks and filter arr
 
 ### Lower-level exports
 
-`walkDirectory`, `scanDirectories`, `toContentMap`, `normalizePath`, `isFileSystemAccessSupported`, `isOpfsSupported`, `getDirectoryPicker`, `getOpfsRoot` and `ensurePermission` are exported for building on top of the same primitives the hook uses.
+`walkDirectory`, `scanDirectories`, `toContentMap`, `normalizePath`, `isFileSystemAccessSupported`, `isOpfsSupported`, `isOpfsWritable`, `isLockedError`, `getDirectoryPicker`, `getOpfsRoot` and `ensurePermission` are exported for building on top of the same primitives the hook uses.
 
 ## 📚 Contributing
 
@@ -335,3 +373,9 @@ second terminal. It rebuilds `dist` on every save and runs the tests in watch
 mode, and the demo picks the rebuild up on its next refresh.
 
 Run `pnpm test` for the test suite, `pnpm typecheck` for types and `pnpm lint` for formatting and lint.
+
+The site also serves plain-text docs for agents - `/llms.txt`, `/AGENTS.md`
+and `/index.md` - generated from this README by
+`docs/src/lib/agents.ts`. Renaming a README heading those files read fails
+`tests/agents.test.ts`. Agents working on the repo itself should read
+[`AGENTS.md`](AGENTS.md).

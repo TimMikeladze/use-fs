@@ -147,4 +147,41 @@ describe("scanDirectories", () => {
 			"two/b.txt",
 		]);
 	});
+
+	it("reports a locked file once until it reads cleanly again", async () => {
+		const fs = new MockFileSystem("root", { "db.txt": "v1" });
+		const failingPaths = new Set<string>();
+		const onError = vi.fn();
+		const run = (previous: ReadonlyMap<string, FileRecord>) =>
+			scanDirectories({
+				directories: new Map([["root", fs.handle]]),
+				filters: [],
+				previous,
+				failingPaths,
+				onError,
+			});
+
+		const first = await run(new Map());
+		fs.write("db.txt", "v2");
+		fs.setLocked("db.txt");
+
+		const second = await run(first.records);
+		const third = await run(second.records);
+
+		expect(onError).toHaveBeenCalledTimes(1);
+		expect(third.records.get("root/db.txt")?.content).toBe("v1");
+		expect(third.deleted.size).toBe(0);
+
+		fs.setLocked("db.txt", false);
+		const fourth = await run(third.records);
+
+		expect(Object.fromEntries(fourth.changed)).toEqual({ "root/db.txt": "v2" });
+		expect(failingPaths.size).toBe(0);
+
+		fs.setLocked("db.txt");
+		fs.write("db.txt", "v3");
+		await run(fourth.records);
+
+		expect(onError).toHaveBeenCalledTimes(2);
+	});
 });

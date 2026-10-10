@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	binaryFilter,
 	commonFilters,
 	createExcludedDirectoryFilter,
 	createFilter,
@@ -91,6 +92,39 @@ describe("miscFilter", () => {
 		});
 
 		expect(await collect(fs, [miscFilter])).toEqual(["root/notes.txt"]);
+	});
+});
+
+describe("binaryFilter", () => {
+	it("drops databases, their journals and other binary files", async () => {
+		const fs = new MockFileSystem("root", {
+			"app.sqlite": "",
+			"app.sqlite-wal": "",
+			"app.sqlite-shm": "",
+			"logo.png": "",
+			"module.wasm": "",
+			"dev-journal": "a text file, not a SQLite journal",
+			"notes.md": "n",
+			src: { "index.ts": "i" },
+		});
+
+		expect((await collect(fs, [binaryFilter])).sort()).toEqual([
+			"root/dev-journal",
+			"root/notes.md",
+			"root/src/index.ts",
+		]);
+	});
+
+	it("matches suffixes regardless of case", async () => {
+		const fs = new MockFileSystem("root", { "IMG_0001.JPG": "", "a.ts": "a" });
+
+		expect(await collect(fs, [binaryFilter])).toEqual(["root/a.ts"]);
+	});
+
+	it("is not part of commonFilters", async () => {
+		const fs = new MockFileSystem("root", { "logo.png": "" });
+
+		expect(await collect(fs, commonFilters)).toEqual(["root/logo.png"]);
 	});
 });
 

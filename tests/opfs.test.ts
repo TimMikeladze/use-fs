@@ -1,9 +1,14 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getOpfsRoot, isOpfsSupported } from "../src/opfs";
+import { getOpfsRoot, isOpfsSupported, isOpfsWritable } from "../src/opfs";
 import type { UseFileSystemOptions } from "../src/useFileSystem";
 import { useFs } from "../src/useFileSystem";
-import { installDirectoryPicker, installOpfs, MockFileSystem } from "./mock-fs";
+import {
+	installDirectoryPicker,
+	installOpfs,
+	MockFileHandle,
+	MockFileSystem,
+} from "./mock-fs";
 
 const NOT_AVAILABLE = /not available/;
 const NEEDS_A_PATH = /needs an explicit `path`/;
@@ -46,6 +51,21 @@ describe("opfs", () => {
 		it("is true once the API is available", () => {
 			useOpfs();
 			expect(isOpfsSupported()).toBe(true);
+		});
+	});
+
+	describe("isOpfsWritable", () => {
+		it("is false when handles have no createWritable", () => {
+			useOpfs();
+			expect(isOpfsWritable()).toBe(false);
+		});
+
+		it("is true when FileSystemFileHandle implements createWritable", () => {
+			useOpfs();
+			vi.stubGlobal("FileSystemFileHandle", MockFileHandle);
+			cleanups.push(() => vi.unstubAllGlobals());
+
+			expect(isOpfsWritable()).toBe(true);
 		});
 	});
 

@@ -13,10 +13,12 @@ const EXPECTED_EXPORTS = [
 	"DEFAULT_POLL_INTERVAL",
 	"DEFAULT_PROCESSING_INDICATOR_DELAY",
 	"basename",
+	"binaryFilter",
 	"commonFilters",
 	"createExcludedDirectoryFilter",
 	"createExcludedFileFilter",
 	"createFilter",
+	"DEFAULT_BINARY_FILE_SUFFIXES",
 	"dirname",
 	"distFilter",
 	"ensurePermission",
@@ -26,8 +28,10 @@ const EXPECTED_EXPORTS = [
 	"isAbortError",
 	"isAtOrWithin",
 	"isFileSystemAccessSupported",
+	"isLockedError",
 	"isNotFoundError",
 	"isOpfsSupported",
+	"isOpfsWritable",
 	"isWithin",
 	"joinPath",
 	"mapLimit",
@@ -54,6 +58,7 @@ describe("public API", () => {
 		expect(useFsPackage.isFileSystemAccessSupported()).toBe(false);
 		expect(useFsPackage.getDirectoryPicker()).toBeNull();
 		expect(useFsPackage.isOpfsSupported()).toBe(false);
+		expect(useFsPackage.isOpfsWritable()).toBe(false);
 	});
 
 	it("treats handles without the permission API as already granted", async () => {

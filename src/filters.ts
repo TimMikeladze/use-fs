@@ -106,6 +106,70 @@ export const miscFilter: FilterFn = createExcludedFileFilter({
 	suffixes: DEFAULT_EXCLUDED_FILE_SUFFIXES,
 });
 
+/** File suffixes excluded by {@link binaryFilter}. */
+export const DEFAULT_BINARY_FILE_SUFFIXES = [
+	// Databases and their journals, e.g. SQLite WASM writing through a worker.
+	".db",
+	".db-journal",
+	".db-shm",
+	".db-wal",
+	".sqlite",
+	".sqlite-journal",
+	".sqlite-shm",
+	".sqlite-wal",
+	".sqlite3",
+	".sqlite3-journal",
+	".sqlite3-shm",
+	".sqlite3-wal",
+	".wasm",
+	// Archives
+	".zip",
+	".gz",
+	".tgz",
+	".tar",
+	".7z",
+	// Images
+	".png",
+	".jpg",
+	".jpeg",
+	".gif",
+	".webp",
+	".avif",
+	".ico",
+	// Audio and video
+	".mp3",
+	".mp4",
+	".wav",
+	".webm",
+	".mov",
+	".ogg",
+	// Fonts and documents
+	".woff",
+	".woff2",
+	".ttf",
+	".otf",
+	".pdf",
+];
+
+/**
+ * Drops binary files - databases, WASM, archives, images, media, fonts - by
+ * suffix, ignoring case so `IMG_0001.JPG` goes too.
+ *
+ * Opt in - not part of {@link commonFilters}. Contents are exposed as text, so
+ * a binary file is usually noise, and can be an expensive one: a database a worker rewrites through `createSyncAccessHandle`
+ * changes size or timestamp on nearly every poll, and would be re-read and
+ * decoded in full each time.
+ */
+export const binaryFilter: FilterFn = createFilter({
+	shouldIncludeFile: ({ name }) => {
+		const lower = name.toLowerCase();
+
+		return !DEFAULT_BINARY_FILE_SUFFIXES.some((suffix) =>
+			lower.endsWith(suffix),
+		);
+	},
+});
+
 const readTextFile = async (
 	directoryHandle: FileSystemDirectoryHandle,
 	name: string,
@@ -189,5 +253,7 @@ export const gitFilter: FilterFn = () => {
 /**
  * The default set of filters: build output, OS scratch files and everything
  * `.gitignore` excludes.
+ *
+ * {@link binaryFilter} is opt in: `[...commonFilters, binaryFilter]`.
  */
 export const commonFilters: FilterFn[] = [distFilter, miscFilter, gitFilter];

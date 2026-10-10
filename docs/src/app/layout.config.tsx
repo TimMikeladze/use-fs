@@ -1,5 +1,6 @@
 import { Icon } from "@iconify/react";
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
+import { AGENT_FILES } from "@/lib/agent-files";
 
 /**
  * Shared layout configurations
@@ -74,6 +75,19 @@ export const baseOptions: BaseLayoutProps = {
 		),
 	},
 	links: [
+		{
+			type: "menu",
+			text: "For agents",
+			items: AGENT_FILES.filter((file) => !("hideInNav" in file)).map(
+				(file) => ({
+					text: file.title,
+					description: file.description,
+					url: file.path,
+					// Plain-text routes, not pages: skip client-side navigation.
+					external: true,
+				}),
+			),
+		},
 		// {
 		// 	text: "Documentation",
 		// 	url: "/docs",

@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isAbortError, isNotFoundError, toError } from "./async";
+import {
+	describeLockError,
+	isAbortError,
+	isNotFoundError,
+	toError,
+} from "./async";
 import { commonFilters } from "./filters";
 import {
 	DEFAULT_OPFS_PATH,
 	getOpfsRoot,
 	isOpfsSupported as isOpfsAvailable,
+	isOpfsWritable as isOpfsWritableAvailable,
 	type OpfsMountOptions,
 } from "./opfs";
 import { isAtOrWithin, isWithin, normalizePath, pathSegments } from "./path";
@@ -109,6 +115,29 @@ const EMPTY_SNAPSHOT: Snapshot = {
 	handles: new Map(),
 };
 
+const writableUnsupportedError = (path: string) => {
+	const error = new Error(
+		`Cannot write "${path}": this browser has no createWritable(). Write from a worker with createSyncAccessHandle() instead.`,
+	);
+	error.name = "NotSupportedError";
+
+	return error;
+};
+
+/**
+ * Throws when the browser has file handles but no `createWritable()` - Safari
+ * before 26. Environments without a `FileSystemFileHandle` global are left to
+ * the per-handle check in `writeFile`.
+ */
+const assertWritableStreams = (path: string) => {
+	if (
+		typeof FileSystemFileHandle !== "undefined" &&
+		typeof FileSystemFileHandle.prototype.createWritable !== "function"
+	) {
+		throw writableUnsupportedError(path);
+	}
+};
+
 const useLatest = <T>(value: T) => {
 	const ref = useRef(value);
 
@@ -136,6 +165,9 @@ export const useFileSystem = (options: UseFileSystemOptions = {}) => {
 		new Map(),
 	);
 	const recordsRef = useRef<Map<string, FileRecord>>(new Map());
+	// Paths whose last read failed, so a file a worker keeps locked is reported
+	// once rather than on every poll.
+	const failingPathsRef = useRef<Set<string>>(new Set());
 	const generationRef = useRef(0);
 	const scanRef = useRef<Promise<void> | null>(null);
 	const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -149,12 +181,14 @@ export const useFileSystem = (options: UseFileSystemOptions = {}) => {
 	const [isPolling, setIsPolling] = useState(false);
 	const [isBrowserSupported, setIsBrowserSupported] = useState(false);
 	const [isOpfsSupported, setIsOpfsSupported] = useState(false);
+	const [isOpfsWritable, setIsOpfsWritable] = useState(false);
 	const [error, setError] = useState<Error | null>(null);
 
 	// Resolved on the client only, so server rendering and hydration agree.
 	useEffect(() => {
 		setIsBrowserSupported(isFileSystemAccessSupported());
 		setIsOpfsSupported(isOpfsAvailable());
+		setIsOpfsWritable(isOpfsWritableAvailable());
 	}, []);
 
 	useEffect(() => {
@@ -339,6 +373,7 @@ export const useFileSystem = (options: UseFileSystemOptions = {}) => {
 			previous,
 			batchSize: current.batchSize ?? DEFAULT_BATCH_SIZE,
 			concurrency: current.concurrency ?? DEFAULT_CONCURRENCY,
+			failingPaths: failingPathsRef.current,
 			onError: reportError,
 		});
 
@@ -595,6 +630,7 @@ export const useFileSystem = (options: UseFileSystemOptions = {}) => {
 		generationRef.current += 1;
 		directoriesRef.current = new Map();
 		recordsRef.current = new Map();
+		failingPathsRef.current = new Set();
 
 		if (flushTimerRef.current !== null) {
 			clearTimeout(flushTimerRef.current);
@@ -702,6 +738,11 @@ export const useFileSystem = (options: UseFileSystemOptions = {}) => {
 			writeOptions: FileWriteOptions = {},
 		): Promise<void> => {
 			const { create = true, truncate = true } = writeOptions;
+
+			// Checked before resolving so a browser that cannot write never gets
+			// an empty file (or parent directories) created on its behalf.
+			assertWritableStreams(path);
+
 			const entry = await resolveEntry(path, { createDirectories: create });
 
 			await requireWritePermission(entry.root);
@@ -718,9 +759,19 @@ export const useFileSystem = (options: UseFileSystemOptions = {}) => {
 				throw handleError;
 			}
 
-			const writable = await handle.createWritable({
-				keepExistingData: !truncate,
-			});
+			if (typeof handle.createWritable !== "function") {
+				throw writableUnsupportedError(entry.path);
+			}
+
+			let writable: FileSystemWritableFileStream;
+
+			try {
+				writable = await handle.createWritable({
+					keepExistingData: !truncate,
+				});
+			} catch (openError) {
+				throw describeLockError(openError, entry.path);
+			}
 
 			try {
 				await writable.write(data as FileSystemWriteChunkType);
@@ -741,6 +792,10 @@ export const useFileSystem = (options: UseFileSystemOptions = {}) => {
 			path: string,
 			initialData?: WritableFileData,
 		): Promise<FileSystemFileHandle> => {
+			if (initialData !== undefined) {
+				assertWritableStreams(path);
+			}
+
 			const entry = await resolveEntry(path, { createDirectories: true });
 
 			await requireWritePermission(entry.root);
@@ -766,7 +821,11 @@ export const useFileSystem = (options: UseFileSystemOptions = {}) => {
 			const entry = await resolveEntry(path);
 
 			await requireWritePermission(entry.root);
-			await entry.directory.removeEntry(entry.name);
+			await entry.directory
+				.removeEntry(entry.name)
+				.catch((removeError: unknown) => {
+					throw describeLockError(removeError, entry.path);
+				});
 
 			forgetPaths((candidate) => candidate === entry.path);
 		},
@@ -779,7 +838,13 @@ export const useFileSystem = (options: UseFileSystemOptions = {}) => {
 			const entry = await resolveEntry(path);
 
 			await requireWritePermission(entry.root);
-			await entry.directory.removeEntry(entry.name, { recursive: true });
+			await entry.directory
+				.removeEntry(entry.name, { recursive: true })
+				.catch((removeError: unknown) => {
+					throw describeLockError(removeError, entry.path, {
+						directory: true,
+					});
+				});
 
 			forgetPaths((candidate) => isAtOrWithin(candidate, entry.path));
 		},
@@ -815,6 +880,12 @@ export const useFileSystem = (options: UseFileSystemOptions = {}) => {
 		isBrowserSupported,
 		/** Whether this browser implements the origin private file system. */
 		isOpfsSupported,
+		/**
+		 * Whether `writeFile` / `createFile` can write to OPFS from the main
+		 * thread. False in Safari before 26, which can only write OPFS from a
+		 * worker through `createSyncAccessHandle()`.
+		 */
+		isOpfsWritable,
 		/** The most recent recoverable error, if any. */
 		error,
 		onDirectorySelection,

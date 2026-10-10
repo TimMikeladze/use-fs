@@ -1,9 +1,16 @@
-export { isAbortError, isNotFoundError, mapLimit } from "./async";
 export {
+	isAbortError,
+	isLockedError,
+	isNotFoundError,
+	mapLimit,
+} from "./async";
+export {
+	binaryFilter,
 	commonFilters,
 	createExcludedDirectoryFilter,
 	createExcludedFileFilter,
 	createFilter,
+	DEFAULT_BINARY_FILE_SUFFIXES,
 	DEFAULT_EXCLUDED_DIRECTORIES,
 	DEFAULT_EXCLUDED_FILE_SUFFIXES,
 	DEFAULT_EXCLUDED_FILES,
@@ -15,6 +22,7 @@ export {
 	DEFAULT_OPFS_PATH,
 	getOpfsRoot,
 	isOpfsSupported,
+	isOpfsWritable,
 	type OpfsMountOptions,
 } from "./opfs";
 export {

@@ -41,6 +41,19 @@ const getStorageManager = () => {
  */
 export const isOpfsSupported = (): boolean => getStorageManager() !== null;
 
+/**
+ * True when the main thread can write to OPFS through `createWritable()`.
+ *
+ * Narrower than {@link isOpfsSupported}: Safari read OPFS from 15.2 but only
+ * shipped `createWritable()` in Safari 26. Before that, the only way to write
+ * was `createSyncAccessHandle()` from a worker - the hook can still watch what
+ * such a worker writes, but its own `writeFile` / `createFile` cannot work.
+ */
+export const isOpfsWritable = (): boolean =>
+	isOpfsSupported() &&
+	typeof FileSystemFileHandle !== "undefined" &&
+	typeof FileSystemFileHandle.prototype.createWritable === "function";
+
 /** Options shared by every OPFS entry point. */
 export interface OpfsMountOptions {
 	/**

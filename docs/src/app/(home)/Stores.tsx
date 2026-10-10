@@ -40,7 +40,10 @@ const FACTS = {
 		["Stored", "On your disk, where your editor can see them"],
 	],
 	opfs: [
-		["Browsers", "Chrome, Edge, Opera, Safari 17+, Firefox 111+"],
+		[
+			"Browsers",
+			"Chrome, Edge, Opera, Firefox 111+, Safari 26+ (15.2+ read-only)",
+		],
 		["Asks", "Nothing at all"],
 		["Stored", "In the browser, private to this origin"],
 	],

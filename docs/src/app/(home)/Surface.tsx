@@ -8,6 +8,7 @@ const STATE = [
 	["isPolling", "The polling loop is running"],
 	["isBrowserSupported", "The directory picker is available"],
 	["isOpfsSupported", "The origin private file system is available"],
+	["isOpfsWritable", "The hook can write to it (Safari 26+)"],
 	["error", "Most recent recoverable error, or null"],
 ];
 
@@ -98,7 +99,8 @@ export const Surface = () => (
 					<p className="mt-4 text-[11.5px] text-faint leading-relaxed">
 						Also exported: walkDirectory, scanDirectories, toContentMap,
 						normalizePath, isFileSystemAccessSupported, isOpfsSupported,
-						getDirectoryPicker, getOpfsRoot, ensurePermission.
+						isOpfsWritable, isLockedError, getDirectoryPicker, getOpfsRoot,
+						ensurePermission.
 					</p>
 				</div>
 				<Code code={FILTER_SNIPPET} filename="filters.ts" />

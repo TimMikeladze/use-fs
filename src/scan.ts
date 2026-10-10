@@ -17,6 +17,12 @@ export interface ScanParams {
 	batchSize?: number;
 	/** Maximum number of directories enumerated at once. Defaults to `8`. */
 	concurrency?: number;
+	/**
+	 * Paths whose last read failed. When given, the scan updates it in place and
+	 * reports a failing file through `onError` only once until it reads cleanly
+	 * again - so a file a worker keeps locked does not raise an error every poll.
+	 */
+	failingPaths?: Set<string>;
 	/** Called for every non-fatal error encountered during the scan. */
 	onError?: (error: Error) => void;
 }
@@ -57,7 +63,7 @@ export const toContentMap = (
 export const scanDirectories = async (
 	params: ScanParams,
 ): Promise<ScanResult> => {
-	const { directories, filters, previous, onError } = params;
+	const { directories, filters, previous, onError, failingPaths } = params;
 
 	const discovered = new Map<string, FileSystemFileHandle>();
 	const unreadableDirectories: string[] = [];
@@ -127,14 +133,19 @@ export const scanDirectories = async (
 		async ([path, handle]) => {
 			try {
 				await readFile(path, handle);
+				failingPaths?.delete(path);
 			} catch (error) {
 				if (isNotFoundError(error)) {
 					// The file was removed between enumeration and reading; letting it
 					// fall out of `records` reports it as deleted, which it is.
+					failingPaths?.delete(path);
 					return;
 				}
 
-				onError?.(toError(error));
+				if (!failingPaths?.has(path)) {
+					failingPaths?.add(path);
+					onError?.(toError(error));
+				}
 
 				const record = previous.get(path);
 
@@ -160,6 +171,15 @@ export const scanDirectories = async (
 				)
 			) {
 				records.set(path, record);
+			}
+		}
+	}
+
+	// Forget failures for files that are no longer there at all.
+	if (failingPaths) {
+		for (const path of failingPaths) {
+			if (!discovered.has(path)) {
+				failingPaths.delete(path);
 			}
 		}
 	}

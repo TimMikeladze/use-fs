@@ -1,11 +1,13 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, type Mock, vi } from "vitest";
+import { isLockedError } from "../src/async";
 import { createFilter } from "../src/filters";
 import type { UseFileSystemOptions } from "../src/useFileSystem";
 import { useFs } from "../src/useFileSystem";
 import {
 	installDirectoryPicker,
 	MockDirectoryHandle,
+	MockFileHandle,
 	MockFileSystem,
 } from "./mock-fs";
 
@@ -21,6 +23,9 @@ const FILE_NOT_FOUND = /File not found/;
 const NO_WATCHED_DIRECTORY = /No watched directory/;
 const NO_TRAVERSAL = /must not contain/;
 const PERMISSION_DENIED = /permission was not granted/i;
+const LOCKED = /locked by another context/;
+const LOCKED_INSIDE = /A file inside "root\/data" is locked/;
+const NO_CREATE_WRITABLE = /no createWritable/;
 
 const cleanups: (() => void)[] = [];
 
@@ -571,6 +576,96 @@ describe("useFileSystem", () => {
 				PERMISSION_DENIED,
 			);
 			expect(handle.requestPermission).toHaveBeenCalled();
+		});
+	});
+
+	describe("lock conflicts", () => {
+		it("names the path when a worker holds a sync access handle on the file", async () => {
+			const fs = new MockFileSystem("root", { "a.txt": "a" });
+			usePicker(fs.handle);
+
+			const { result } = renderFs();
+
+			await act(async () => {
+				await result.current.onDirectorySelection();
+			});
+
+			fs.setLocked("a.txt");
+
+			const writeError = await result.current
+				.writeFile("root/a.txt", "x")
+				.catch((caught: unknown) => caught);
+
+			expect(isLockedError(writeError)).toBe(true);
+			expect((writeError as Error).message).toMatch(LOCKED);
+			expect((writeError as Error).message).toContain("root/a.txt");
+
+			await expect(result.current.deleteFile("root/a.txt")).rejects.toThrow(
+				LOCKED,
+			);
+			expect(fs.read("a.txt")).toBe("a");
+		});
+
+		it("says a file inside the directory is locked on deleteDirectory", async () => {
+			const fs = new MockFileSystem("root", { data: { "a.txt": "a" } });
+			usePicker(fs.handle);
+
+			const { result } = renderFs();
+
+			await act(async () => {
+				await result.current.onDirectorySelection();
+			});
+
+			fs.setLocked("data/a.txt");
+
+			await expect(result.current.deleteDirectory("root/data")).rejects.toThrow(
+				LOCKED_INSIDE,
+			);
+		});
+
+		it("explains a missing createWritable instead of throwing a TypeError", async () => {
+			const fs = new MockFileSystem("root", { "a.txt": "a" });
+			usePicker(fs.handle);
+			// Safari before 26: OPFS handles exist, `createWritable` does not.
+			const original = MockFileHandle.prototype.createWritable;
+			Reflect.deleteProperty(MockFileHandle.prototype, "createWritable");
+			cleanups.push(() => {
+				MockFileHandle.prototype.createWritable = original;
+			});
+
+			const { result } = renderFs();
+
+			await act(async () => {
+				await result.current.onDirectorySelection();
+			});
+
+			await expect(result.current.writeFile("root/a.txt", "x")).rejects.toThrow(
+				NO_CREATE_WRITABLE,
+			);
+		});
+	});
+
+	describe("browsers without createWritable", () => {
+		it("rejects before creating an empty file or its parents", async () => {
+			const fs = new MockFileSystem("root", {});
+			usePicker(fs.handle);
+			// Safari before 26: the global exists, `createWritable` does not.
+			vi.stubGlobal("FileSystemFileHandle", class {});
+			cleanups.push(() => vi.unstubAllGlobals());
+
+			const { result } = renderFs();
+
+			await act(async () => {
+				await result.current.onDirectorySelection();
+			});
+
+			await expect(
+				result.current.writeFile("root/new/a.txt", "x"),
+			).rejects.toThrow(NO_CREATE_WRITABLE);
+			await expect(
+				result.current.createFile("root/b.txt", "x"),
+			).rejects.toThrow(NO_CREATE_WRITABLE);
+			expect(fs.paths()).toEqual([]);
 		});
 	});
 

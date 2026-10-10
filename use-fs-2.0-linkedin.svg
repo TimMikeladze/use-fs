@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">
+  <title>use-fs 2.0 - a React hook that watches a directory and re-renders on change</title>
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M24 0H0V24" fill="none" stroke="#ffffff" stroke-opacity="0.014" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="fade" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4fdda5" stop-opacity="0.10"/>
+      <stop offset="0.55" stop-color="#f4b13c" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#ff7a72" stop-opacity="0.08"/>
+    </linearGradient>
+    <clipPath id="panelClip">
+      <rect x="660" y="92" width="468" height="446" rx="14"/>
+    </clipPath>
+  </defs>
+
+  <!-- ground -->
+  <rect width="1200" height="630" fill="#080a0f"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <rect width="1200" height="630" fill="url(#fade)"/>
+
+  <!-- ── left column ───────────────────────────────────────────── -->
+
+  <!-- eyebrow -->
+  <g transform="translate(72,104)">
+    <rect x="0" y="-13" width="7" height="7" fill="#4fdda5"/>
+    <text x="20" y="-6" fill="#626d7e" font-size="14" letter-spacing="3.4">RELEASE 2.0.0</text>
+  </g>
+
+  <!-- wordmark -->
+  <text x="72" y="204" fill="#e6eaf2" font-size="88" font-weight="700" letter-spacing="-3">use-fs</text>
+
+  <line x1="72" y1="240" x2="560" y2="240" stroke="#ffffff" stroke-opacity="0.10" stroke-width="1"/>
+
+  <!-- tagline -->
+  <text x="72" y="286" fill="#e6eaf2" font-size="25" letter-spacing="-0.4">A React hook that watches a</text>
+  <text x="72" y="322" fill="#e6eaf2" font-size="25" letter-spacing="-0.4">directory and re-renders on change.</text>
+
+  <text x="72" y="372" fill="#939eaf" font-size="17">Point it at a folder on disk — or, new in 2.0,</text>
+  <text x="72" y="398" fill="#939eaf" font-size="17">at the origin private file system.</text>
+
+  <!-- chips -->
+  <g font-size="14">
+    <g transform="translate(72,432)">
+      <rect width="142" height="34" rx="17" fill="#4fdda5" fill-opacity="0.12" stroke="#4fdda5" stroke-opacity="0.42"/>
+      <text x="71" y="22" fill="#4fdda5" text-anchor="middle">OPFS support</text>
+    </g>
+    <g transform="translate(228,432)">
+      <rect width="250" height="34" rx="17" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.14"/>
+      <text x="125" y="22" fill="#939eaf" text-anchor="middle">Safari 17+ &#183; Firefox 111+</text>
+    </g>
+    <g transform="translate(72,478)">
+      <rect width="192" height="34" rx="17" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.14"/>
+      <text x="96" y="22" fill="#939eaf" text-anchor="middle">.gitignore filters</text>
+    </g>
+    <g transform="translate(278,478)">
+      <rect width="218" height="34" rx="17" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.14"/>
+      <text x="109" y="22" fill="#939eaf" text-anchor="middle">read &#183; write &#183; delete</text>
+    </g>
+  </g>
+
+  <!-- install + url -->
+  <text x="72" y="562" font-size="18"><tspan fill="#f4b13c">npm i use-fs</tspan><tspan fill="#626d7e">   &#183;   use-fs.com</tspan></text>
+
+  <!-- ── right panel: the watcher ───────────────────────────────── -->
+
+  <rect x="660" y="92" width="468" height="446" rx="14" fill="#0c0f16" stroke="#ffffff" stroke-opacity="0.09"/>
+
+  <g clip-path="url(#panelClip)">
+    <!-- title bar -->
+    <rect x="660" y="92" width="468" height="52" fill="#10141d"/>
+    <line x1="660" y1="144" x2="1128" y2="144" stroke="#ffffff" stroke-opacity="0.08"/>
+    <text x="688" y="124" fill="#e6eaf2" font-size="15">notes/</text>
+    <circle cx="1100" cy="118" r="4" fill="#4fdda5"/>
+    <text x="1084" y="123" fill="#626d7e" font-size="12" text-anchor="end" letter-spacing="1.2">polling</text>
+
+    <!-- rows -->
+    <g font-size="15">
+      <!-- added -->
+      <rect x="660" y="164" width="468" height="52" fill="#4fdda5" fill-opacity="0.10"/>
+      <rect x="660" y="164" width="3" height="52" fill="#4fdda5"/>
+      <text x="688" y="195" fill="#4fdda5">+</text>
+      <text x="716" y="195" fill="#e6eaf2">notes/todo.md</text>
+      <text x="1100" y="195" fill="#4fdda5" font-size="12" text-anchor="end" letter-spacing="1.6">ADDED</text>
+
+      <!-- changed -->
+      <rect x="660" y="232" width="468" height="52" fill="#f4b13c" fill-opacity="0.10"/>
+      <rect x="660" y="232" width="3" height="52" fill="#f4b13c"/>
+      <text x="688" y="263" fill="#f4b13c">~</text>
+      <text x="716" y="263" fill="#e6eaf2">notes/draft.md</text>
+      <text x="1100" y="263" fill="#f4b13c" font-size="12" text-anchor="end" letter-spacing="1.6">CHANGED</text>
+
+      <!-- deleted -->
+      <rect x="660" y="300" width="468" height="52" fill="#ff7a72" fill-opacity="0.10"/>
+      <rect x="660" y="300" width="3" height="52" fill="#ff7a72"/>
+      <text x="688" y="331" fill="#ff7a72">−</text>
+      <text x="716" y="331" fill="#626d7e" text-decoration="line-through">notes/scratch.txt</text>
+      <text x="1100" y="331" fill="#ff7a72" font-size="12" text-anchor="end" letter-spacing="1.6">DELETED</text>
+    </g>
+
+    <!-- code block -->
+    <line x1="660" y1="384" x2="1128" y2="384" stroke="#ffffff" stroke-opacity="0.08"/>
+    <g font-size="14.5">
+      <text x="688" y="416"><tspan fill="#7fb4f5">const</tspan><tspan fill="#e6eaf2"> { files, </tspan><tspan fill="#4fdda5">addOpfsDirectory</tspan><tspan fill="#e6eaf2"> } =</tspan></text>
+      <text x="688" y="442"><tspan fill="#7fb4f5">  useFs</tspan><tspan fill="#e6eaf2">({ onFilesChanged })</tspan></text>
+      <text x="688" y="486"><tspan fill="#e6eaf2">addOpfsDirectory</tspan><tspan fill="#626d7e">({ name: </tspan><tspan fill="#f4b13c">"notes"</tspan><tspan fill="#626d7e"> })</tspan></text>
+      <text x="688" y="514" fill="#626d7e" font-size="12.5">// no picker, no prompt, no gesture</text>
+    </g>
+  </g>
+</svg>

@@ -16,6 +16,14 @@ export async function generateMetadata(props: {
 		title: "use-fs • your folder is now state",
 		description:
 			"A React hook for the File System Access API and the origin private file system. Point useFs() at a folder on disk or at browser storage, and your component re-renders whenever a file is added, changed or deleted.",
+		// Agents that look for a plain-text twin of the page find it here.
+		alternates: {
+			canonical: "/",
+			types: {
+				"text/markdown": "/index.md",
+				"text/plain": "/llms.txt",
+			},
+		},
 	});
 }
 

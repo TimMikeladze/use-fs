@@ -44,6 +44,37 @@ export const isAbortError = (value: unknown): boolean =>
 export const isNotFoundError = (value: unknown): boolean =>
 	isErrorWithName(value, "NotFoundError");
 
+/**
+ * True when an entry is locked by another context - most often a worker
+ * holding a `createSyncAccessHandle()` on the file, which is exclusive.
+ */
+export const isLockedError = (value: unknown): boolean =>
+	isErrorWithName(value, "NoModificationAllowedError");
+
+/**
+ * Rewraps a lock conflict on `path` with a message that says what happened,
+ * keeping the `NoModificationAllowedError` name so {@link isLockedError} still
+ * matches. Anything else is returned unchanged.
+ */
+export const describeLockError = (
+	value: unknown,
+	path: string,
+	{ directory = false }: { directory?: boolean } = {},
+): unknown => {
+	if (!isLockedError(value)) {
+		return value;
+	}
+
+	const subject = directory ? `A file inside "${path}"` : `"${path}"`;
+	const error = new Error(
+		`${subject} is locked by another context, most likely a worker holding a sync access handle on it. Retry once that handle is closed.`,
+		{ cause: value },
+	);
+	error.name = "NoModificationAllowedError";
+
+	return error;
+};
+
 /** Normalises anything thrown into an `Error`. */
 export const toError = (value: unknown): Error => {
 	if (value instanceof Error) {

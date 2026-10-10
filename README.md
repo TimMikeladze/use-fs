@@ -347,7 +347,7 @@ Options are read at the moment they are used, so inline callbacks and filter arr
 
 ## 📚 Contributing
 
-The demo site depends on the package through `"use-fs": "link:.."`, so it always
+The demo site depends on the package through `"use-fs": "workspace:*"`, so it always
 runs your local build - there is no `pnpm link` step and no published release
 involved. `cd docs && pnpm dev` builds the package first, so a fresh clone works
 straight away.
